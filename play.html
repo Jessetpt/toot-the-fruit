@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toot Your Own Horn - The Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #6B73FF 0%, #000DFF 100%);
+            font-family: 'Poppins', sans-serif;
+            color: white;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 650px;
+            width: 100%;
+            max-height: 98vh;
+        }
+        
+        .game-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .game-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(45deg, #FFFFFF, #E0E0FF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
+        }
+        
+        canvas {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            background: white;
+            max-width: 100%;
+            height: auto;
+            max-height: calc(98vh - 150px);
+            object-fit: contain;
+        }
+        
+        #score {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px 15px;
+            border-radius: 50px;
+            display: inline-block;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 10px 0 0 0;
+            width: 100%;
+        }
+        
+        button {
+            padding: 8px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            background: linear-gradient(45deg, #6B73FF, #000DFF);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(107, 115, 255, 0.5);
+        }
+        
+        button:hover:before {
+            left: 100%;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #FFFFFF, #F5F5FF);
+            padding: 30px;
+            border-radius: 20px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            border-top: 5px solid #6B73FF;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            max-width: 90%;
+            width: 400px;
+            color: #333;
+        }
+        
+        .modal-content h2 {
+            color: #6B73FF;
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+        
+        .modal-content p {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        
+        #finalScore {
+            font-weight: 700;
+            color: #6B73FF;
+            font-size: 24px;
+        }
+        
+        #highScoreForm {
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 10px;
+                border-radius: 15px;
+            }
+            
+            canvas {
+                width: 100%;
+                height: auto;
+                max-height: calc(98vh - 130px);
+            }
+            
+            .game-title {
+                font-size: 20px;
+            }
+            
+            #score {
+                font-size: 18px;
+                padding: 6px 12px;
+            }
+            
+            button {
+                padding: 6px 15px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1 class="game-title">Toot Your Own Horn</h1>
+            <div id="score">Score: 0</div>
+        </div>
+        
+        <canvas id="gameCanvas" width="600" height="600"></canvas>
+        
+        <div class="controls">
+            <button id="startButton">Start Game</button>
+            <button id="restartButton" style="display: none;">Restart</button>
+        </div>
+    </div>
+    
+    <div id="gameOverModal" class="modal">
+        <div class="modal-content">
+            <h2>Game Over!</h2>
+            <p>Final Score: <span id="finalScore">0</span></p>
+            <button id="playAgainButton">Play Again</button>
+            <form id="highScoreForm">
+                <input type="hidden" id="finalScoreInput" name="score">
+                <button type="submit">Submit Score</button>
+            </form>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>

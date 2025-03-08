@@ -1,0 +1,1 @@
+-- SQL function to create in Supabase SQL Editor: CREATE OR REPLACE FUNCTION increment_play_count(row_email TEXT) RETURNS INTEGER AS $$ DECLARE new_count INTEGER; BEGIN UPDATE emails SET play_count = COALESCE(play_count, 0) + 1 WHERE email = row_email RETURNING play_count INTO new_count; RETURN new_count; END; $$ LANGUAGE plpgsql;
