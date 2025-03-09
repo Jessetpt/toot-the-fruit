@@ -29,16 +29,37 @@
             position: relative;
             overflow: hidden;
             color: #FFFFFF; /* White text for dark background */
+            border: 3px solid transparent;
+            background-clip: padding-box;
+            position: relative;
         }
 
+        /* Create gradient border around entire container */
         .container::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            height: 5px;
-            background: linear-gradient(90deg, #209CBD, #F68318); /* Blue and orange gradient */
+            bottom: 0;
+            margin: -3px; /* Negative margin to position behind the container */
+            z-index: -1;
+            background: linear-gradient(45deg, #209CBD, #F68318, #209CBD, #F68318); /* Circular gradient pattern */
+            background-size: 300% 300%;
+            border-radius: 23px; /* 20px + 3px border */
+            animation: gradientBorder 8s ease infinite;
+        }
+
+        @keyframes gradientBorder {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
         }
 
         h1 {
@@ -184,6 +205,12 @@
                 padding: 30px 20px;
                 margin: 20px;
                 background: linear-gradient(to right, #000000, #161627); /* Ensure gradient works on mobile */
+                border: 2px solid transparent; /* Slightly thinner border on mobile */
+            }
+            
+            .container::before {
+                margin: -2px; /* Match the thinner border */
+                border-radius: 22px; /* 20px + 2px border */
             }
             
             h1 {
