@@ -70,6 +70,9 @@ let touchStartY = null;
 let animationRunning = false;
 let lastFrameTime = 0;
 
+// Add this global variable near the top with other game variables
+let showingStartPrompt = false;
+
 // Initialize the game
 window.onload = function() {
     init();
@@ -337,14 +340,81 @@ function drawBoard() {
     }
 }
 
+// This function shows a prompt to press Start Game
+function showStartGamePrompt() {
+    if (showingStartPrompt) return; // Prevent multiple prompts
+    
+    showingStartPrompt = true;
+    
+    // Create a temporary popup message
+    const popup = document.createElement('div');
+    popup.style.position = 'absolute';
+    popup.style.top = '50%';
+    popup.style.left = '50%';
+    popup.style.transform = 'translate(-50%, -50%)';
+    popup.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+    popup.style.color = 'white';
+    popup.style.padding = '20px';
+    popup.style.borderRadius = '10px';
+    popup.style.textAlign = 'center';
+    popup.style.zIndex = '1000';
+    popup.style.fontSize = '20px';
+    popup.style.fontWeight = 'bold';
+    popup.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.5)';
+    popup.style.border = '2px solid #4287f5';
+    popup.style.animation = 'fadeIn 0.5s';
+    
+    // Add animation style
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Set the message
+    popup.textContent = 'Press "Start Game" to play!';
+    
+    // Add to the game container
+    const gameContainer = document.querySelector('.game-container');
+    gameContainer.appendChild(popup);
+    
+    // Highlight the start button
+    const startButton = document.getElementById('startButton');
+    const originalBackground = startButton.style.background;
+    startButton.style.background = 'linear-gradient(45deg, #ff5e00, #ff0062)';
+    startButton.style.transform = 'scale(1.1)';
+    startButton.style.boxShadow = '0 0 20px rgba(255, 100, 50, 0.8)';
+    startButton.style.transition = 'all 0.3s ease';
+    
+    // Remove the popup after 3 seconds
+    setTimeout(() => {
+        popup.style.animation = 'fadeOut 0.5s';
+        setTimeout(() => {
+            gameContainer.removeChild(popup);
+            startButton.style.background = originalBackground;
+            startButton.style.transform = '';
+            startButton.style.boxShadow = '';
+            showingStartPrompt = false;
+        }, 500);
+    }, 3000);
+}
+
 // Handle touch start event
 function handleTouchStart(event) {
-    if (!gameRunning && !fallingTiles) {
-        // Allow selection even when game isn't running
-        // This fixes the issue where tile selection didn't work before starting the game
-    } else if (!gameRunning || fallingTiles) {
+    if (!gameRunning) {
+        // Game hasn't started, show prompt
+        showStartGamePrompt();
         return;
     }
+    
+    if (fallingTiles) return;
     
     // Prevent default behavior (scrolling, zooming)
     event.preventDefault();
@@ -379,11 +449,12 @@ function handleTouchStart(event) {
 
 // Handle touch end event
 function handleTouchEnd(event) {
-    if (!gameRunning && !fallingTiles) {
-        // Allow actions even when game isn't running
-    } else if (!gameRunning || fallingTiles) {
+    if (!gameRunning) {
+        // No need to show prompt here since it's shown in handleTouchStart
         return;
     }
+    
+    if (fallingTiles) return;
     
     // Prevent default behavior
     event.preventDefault();
@@ -505,12 +576,13 @@ function handleTouchEnd(event) {
 
 // Handle tile click
 function handleClick(event) {
-    if (!gameRunning && !fallingTiles) {
-        // Allow selection even when game isn't running
-        // This fixes the issue where tile selection didn't work before starting the game
-    } else if (!gameRunning || fallingTiles) {
+    if (!gameRunning) {
+        // Game hasn't started, show prompt
+        showStartGamePrompt();
         return;
     }
+    
+    if (fallingTiles) return;
     
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
