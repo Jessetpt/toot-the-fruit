@@ -135,9 +135,11 @@
         .controls {
             display: flex;
             justify-content: center;
+            align-items: center;
             gap: 15px;
             margin: 10px 0 0 0;
             width: 100%;
+            position: relative;
         }
         
         button {
@@ -226,31 +228,56 @@
             margin-top: 20px;
         }
         
-        #mobileInstructions {
-            display: none;
-            background: linear-gradient(90deg, rgba(32, 156, 189, 0.7), rgba(32, 156, 189, 0.5));
-            color: #FFFFFF;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 10px 0;
-            max-width: 90%;
-            text-align: center;
-            font-size: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-        }
-        
         .logo {
-            width: 65px;
+            width: 70px;
             height: auto;
-            margin-left: 10px;
+            margin-right: 15px;
             opacity: 1;
             transition: opacity 0.3s ease;
             vertical-align: middle;
         }
         
         .logo:hover {
-            opacity: 1;
+            opacity: 0.9;
+        }
+        
+        #mobileInstructions {
+            display: none;
+            background: linear-gradient(90deg, rgba(32, 156, 189, 0.7), rgba(32, 156, 189, 0.5));
+            color: #FFFFFF;
+            padding: 10px;
+            border-radius: 10px;
+            margin: 8px 0;
+            max-width: 90%;
+            text-align: center;
+            font-size: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Gradient border for mobile instructions */
+        #mobileInstructions::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #209CBD, #F68318);
+            z-index: 1;
+        }
+        
+        #mobileInstructions::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #F68318, #209CBD);
+            z-index: 1;
         }
         
         @media (max-width: 768px) {
@@ -313,16 +340,6 @@
                 border: 2px solid #209CBD;
             }
             
-            #mobileInstructions {
-                display: block;
-                font-size: 14px;
-                padding: 12px;
-                margin: 12px 0;
-                background: linear-gradient(90deg, rgba(32, 156, 189, 0.6), rgba(32, 156, 189, 0.4));
-                border-radius: 8px;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            }
-            
             .game-header {
                 margin-bottom: 10px;
                 width: 100%;
@@ -333,13 +350,13 @@
             }
             
             .title-with-logo {
-                display: flex;
-                align-items: center;
+                width: 100%;
+                justify-content: center;
             }
             
             .game-title {
-                font-size: 20px;
-                margin-right: 8px;
+                font-size: 22px;
+                text-align: center;
             }
             
             #score {
@@ -352,6 +369,10 @@
             .controls {
                 margin: 12px 0;
                 gap: 10px;
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+                position: relative;
             }
             
             button {
@@ -366,15 +387,33 @@
             }
             
             .logo {
-                width: 40px;
+                width: 50px;
                 height: auto;
-                margin-left: 8px;
+                position: absolute;
+                left: 5px;
+                margin: 0;
             }
             
-            /* Hide gradient borders on mobile */
-            .game-container::before, .game-container::after, 
+            #mobileInstructions {
+                padding: 8px 10px;
+                margin: 8px 0;
+                font-size: 13px;
+                line-height: 1.3;
+            }
+            
+            /* Enhanced mobile gradient borders */
+            .game-container::before, 
+            .game-container::after {
+                display: block !important;
+                height: 3px;
+                z-index: 5;
+            }
+            
+            /* Add left and right borders for mobile */
             .left-border, .right-border {
-                display: none;
+                display: block !important;
+                width: 3px;
+                z-index: 5;
             }
         }
     </style>
@@ -388,7 +427,6 @@
         <div class="game-header">
             <div class="title-with-logo">
                 <h1 class="game-title">Toot Your Own Horn</h1>
-                <img src="images/logodark.png" alt="Company Logo" class="logo">
             </div>
             <div id="score">Score: 0</div>
         </div>
@@ -402,6 +440,7 @@
         <canvas id="gameCanvas" width="600" height="600"></canvas>
         
         <div class="controls">
+            <img src="images/logodark.png" alt="Company Logo" class="logo">
             <button id="startButton" style="display: none;">Start Game</button>
             <button id="restartButton" style="display: none;">Restart</button>
         </div>
