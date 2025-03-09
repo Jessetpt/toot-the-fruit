@@ -68,23 +68,20 @@ let touchStartY = null;
 
 // Initialize the game
 window.onload = function() {
+    init();
+};
+
+// Initialize the game board
+function init() {
     canvas = document.getElementById('gameCanvas');
     ctx = canvas.getContext('2d');
     
     // Check if the device is mobile
     isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
-    // Set canvas size based on device
-    if (isMobileDevice) {
-        // Keep the grid size but adjust tile size for mobile
-        const screenWidth = Math.min(window.innerWidth, 500); // Limit max width
-        TILE_SIZE = Math.floor(screenWidth / GRID_SIZE);
-        canvas.width = TILE_SIZE * GRID_SIZE;
-        canvas.height = TILE_SIZE * GRID_SIZE;
-    } else {
-        canvas.width = BOARD_WIDTH;
-        canvas.height = BOARD_HEIGHT;
-    }
+    // Set canvas dimensions - keep fixed size for consistency
+    canvas.width = BOARD_WIDTH;
+    canvas.height = BOARD_HEIGHT;
     
     // Add event listeners
     canvas.addEventListener('click', handleClick);
@@ -98,11 +95,17 @@ window.onload = function() {
     document.getElementById('playAgainButton').addEventListener('click', closeModal);
     document.getElementById('highScoreForm').addEventListener('submit', submitHighScore);
     
-    // Load all images before starting
     loadImages().then(() => {
-        // Initialize the board (but don't start the game yet)
+        console.log('All images loaded successfully');
+        
+        // Initialize and draw the board
         initializeBoard();
         drawBoard();
+        
+        // Update score display
+        document.getElementById('score').textContent = `Score: ${score}`;
+    }).catch(error => {
+        console.error('Error loading images:', error);
     });
 };
 
@@ -287,13 +290,6 @@ function drawBoard() {
             }
         }
     }
-    
-    // Draw the score
-    ctx.fillStyle = '#000000';
-    ctx.font = 'bold 20px Arial';
-    ctx.textAlign = 'start';
-    ctx.textBaseline = 'top';
-    ctx.fillText(`Score: ${score}`, 10, 10);
 }
 
 // Handle touch start event
