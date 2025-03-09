@@ -339,7 +339,12 @@ function drawBoard() {
 
 // Handle touch start event
 function handleTouchStart(event) {
-    if (!gameRunning || fallingTiles) return;
+    if (!gameRunning && !fallingTiles) {
+        // Allow selection even when game isn't running
+        // This fixes the issue where tile selection didn't work before starting the game
+    } else if (!gameRunning || fallingTiles) {
+        return;
+    }
     
     // Prevent default behavior (scrolling, zooming)
     event.preventDefault();
@@ -363,7 +368,7 @@ function handleTouchStart(event) {
     const col = Math.floor(touchStartX / TILE_SIZE);
     const row = Math.floor(touchStartY / TILE_SIZE);
     
-    console.log("Calculated position:", row, col);
+    console.log("Calculated touch position:", row, col);
     
     if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
         selectedTile = { row, col };
@@ -374,7 +379,11 @@ function handleTouchStart(event) {
 
 // Handle touch end event
 function handleTouchEnd(event) {
-    if (!gameRunning || fallingTiles) return;
+    if (!gameRunning && !fallingTiles) {
+        // Allow actions even when game isn't running
+    } else if (!gameRunning || fallingTiles) {
+        return;
+    }
     
     // Prevent default behavior
     event.preventDefault();
@@ -395,6 +404,8 @@ function handleTouchEnd(event) {
         const endCol = Math.floor(touchEndX / TILE_SIZE);
         const endRow = Math.floor(touchEndY / TILE_SIZE);
         
+        console.log("Touch end at position:", endRow, endCol);
+        
         // Calculate the direction of the swipe
         const deltaX = touchEndX - touchStartX;
         const deltaY = touchEndY - touchStartY;
@@ -403,8 +414,12 @@ function handleTouchEnd(event) {
         const minSwipeDistance = TILE_SIZE / 4;
         const isSwipe = Math.abs(deltaX) >= minSwipeDistance || Math.abs(deltaY) >= minSwipeDistance;
         
+        console.log("Is swipe:", isSwipe, "Delta:", deltaX, deltaY);
+        
         if (selectedTile) {
             const { row: selectedRow, col: selectedCol } = selectedTile;
+            
+            console.log("Selected tile:", selectedRow, selectedCol);
             
             // Handle both swipe and tap-then-tap
             if (isSwipe) {
@@ -420,7 +435,7 @@ function handleTouchEnd(event) {
                     newRow = selectedRow + (deltaY > 0 ? 1 : -1);
                 }
                 
-                console.log("Swipe attempt:", selectedRow, selectedCol, "to", newRow, newCol);
+                console.log("Swipe attempt from", selectedRow, selectedCol, "to", newRow, newCol);
                 
                 // Check if the new position is valid and perform the swap
                 if (newRow >= 0 && newRow < GRID_SIZE && newCol >= 0 && newCol < GRID_SIZE &&
@@ -430,39 +445,49 @@ function handleTouchEnd(event) {
                 } else {
                     // Invalid swipe target - maintain selection
                     drawBoard(); // Ensure selection is still visible
-                    return;
                 }
             } 
             else {
                 // This is a tap - check if it's an adjacent tile
-                console.log("Tap attempt from", selectedRow, selectedCol, "to", endRow, endCol);
+                console.log("Tap-then-tap attempt from", selectedRow, selectedCol, "to", endRow, endCol);
                 
                 // Check if the tapped position is valid
                 if (endRow >= 0 && endRow < GRID_SIZE && endCol >= 0 && endCol < GRID_SIZE) {
                     // Check if the tapped tile is adjacent to the selected tile
-                    if ((Math.abs(endRow - selectedRow) === 1 && endCol === selectedCol) ||
-                        (Math.abs(endCol - selectedCol) === 1 && endRow === selectedRow)) {
+                    const isHorizontalAdjacent = Math.abs(endCol - selectedCol) === 1 && endRow === selectedRow;
+                    const isVerticalAdjacent = Math.abs(endRow - selectedRow) === 1 && endCol === selectedCol;
+                    
+                    console.log("Adjacency check:", 
+                               "Horizontal:", isHorizontalAdjacent, 
+                               "Vertical:", isVerticalAdjacent);
+                               
+                    if (isHorizontalAdjacent || isVerticalAdjacent) {
                         // Valid adjacent tile - perform the swap
+                        console.log("Valid tap-then-tap - swapping tiles");
                         swapTiles(selectedRow, selectedCol, endRow, endCol);
-                        // Note: swapTiles now handles clearing or maintaining selection
+                        // Note: swapTiles now handles the selection state
+                    } else if (endRow === selectedRow && endCol === selectedCol) {
+                        // Tapped the same tile - keep it selected
+                        console.log("Tapped same tile - keeping selected");
+                        drawBoard();
                     } else {
                         // Not adjacent - select the new tile instead
+                        console.log("Not adjacent - selecting new tile");
                         selectedTile = { row: endRow, col: endCol };
                         drawBoard();
-                        return;
                     }
                 } else {
                     // Tapped outside the grid - maintain current selection
+                    console.log("Tapped outside grid - maintaining selection");
                     drawBoard(); // Ensure selection is still visible
-                    return;
                 }
             }
         } else {
             // No tile was previously selected, select this one if valid
             if (endRow >= 0 && endRow < GRID_SIZE && endCol >= 0 && endCol < GRID_SIZE) {
+                console.log("No previous selection - selecting new tile");
                 selectedTile = { row: endRow, col: endCol };
                 drawBoard();
-                return;
             }
         }
         
@@ -472,7 +497,7 @@ function handleTouchEnd(event) {
             drawBoard();
         }
         
-        // Only clear touchStart coordinates
+        // Only clear touchStart coordinates but maintain selectedTile for tap-then-tap
         touchStartX = null;
         touchStartY = null;
     }
@@ -480,7 +505,12 @@ function handleTouchEnd(event) {
 
 // Handle tile click
 function handleClick(event) {
-    if (!gameRunning || fallingTiles) return;
+    if (!gameRunning && !fallingTiles) {
+        // Allow selection even when game isn't running
+        // This fixes the issue where tile selection didn't work before starting the game
+    } else if (!gameRunning || fallingTiles) {
+        return;
+    }
     
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
@@ -495,31 +525,44 @@ function handleClick(event) {
     const col = Math.floor(scaledX / TILE_SIZE);
     const row = Math.floor(scaledY / TILE_SIZE);
     
-    console.log("Desktop click at grid position:", row, col);
+    console.log("Desktop click at position:", row, col);
     
     if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
+        const oldSelectedTile = selectedTile ? {...selectedTile} : null;
+        
         if (selectedTile) {
             // If a tile is already selected, try to swap
             const { row: selectedRow, col: selectedCol } = selectedTile;
             
             // Check if the clicked tile is adjacent to the selected tile
-            if ((Math.abs(row - selectedRow) === 1 && col === selectedCol) ||
-                (Math.abs(col - selectedCol) === 1 && row === selectedRow)) {
-                // Swap tiles
+            const isHorizontalAdjacent = Math.abs(col - selectedCol) === 1 && row === selectedRow;
+            const isVerticalAdjacent = Math.abs(row - selectedRow) === 1 && col === selectedCol;
+            
+            console.log("Adjacency check:", 
+                       "Horizontal:", isHorizontalAdjacent, 
+                       "Vertical:", isVerticalAdjacent);
+                       
+            if (isHorizontalAdjacent || isVerticalAdjacent) {
+                // Swap tiles - this is a valid move
+                console.log("Valid move - swapping tiles");
                 swapTiles(selectedRow, selectedCol, row, col);
-                selectedTile = null;
+                // selectedTile is handled by swapTiles
             } else {
                 // Select the new tile instead - always select on first click
+                console.log("Not adjacent - selecting new tile");
                 selectedTile = { row, col };
                 // Force a redraw to show the selection
                 drawBoard();
             }
         } else {
             // Select the tile
+            console.log("No previous selection - selecting tile");
             selectedTile = { row, col };
             // Force a redraw to show the selection
             drawBoard();
         }
+        
+        console.log("Old selected:", oldSelectedTile, "New selected:", selectedTile);
     }
 }
 
@@ -791,12 +834,20 @@ function startAnimationLoop() {
 
 // Animation frame function for smooth UI elements
 function animationFrame(timestamp) {
-    // Only redraw if needed (when a tile is selected or game is running)
-    if (selectedTile || gameRunning) {
-        // Limit redraw rate for performance (max ~60fps)
-        if (!lastFrameTime || timestamp - lastFrameTime >= 16) {
-            lastFrameTime = timestamp;
+    // Always redraw the board to ensure animations work
+    // This solves the desktop animation issues
+    if (!lastFrameTime || timestamp - lastFrameTime >= 16) {
+        lastFrameTime = timestamp;
+        
+        // If a tile is selected or game is running, we need to redraw
+        // But we'll always redraw to ensure animations are visible
+        if (selectedTile || gameRunning) {
             drawBoard();
+        }
+        
+        // Add debug output to help troubleshoot desktop animation
+        if (selectedTile) {
+            console.log("Animation frame with selected tile:", selectedTile.row, selectedTile.col, "Time:", Math.floor(timestamp));
         }
     }
     
