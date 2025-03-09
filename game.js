@@ -95,19 +95,16 @@ function init() {
     document.getElementById('playAgainButton').addEventListener('click', closeModal);
     document.getElementById('highScoreForm').addEventListener('submit', submitHighScore);
     
+    // Load images and initialize board
     loadImages().then(() => {
         console.log('All images loaded successfully');
-        
-        // Initialize and draw the board
         initializeBoard();
         drawBoard();
-        
-        // Update score display
         document.getElementById('score').textContent = `Score: ${score}`;
     }).catch(error => {
         console.error('Error loading images:', error);
     });
-};
+}
 
 // Load all the sprite images
 async function loadImages() {
@@ -198,14 +195,23 @@ function initializeBoard() {
 
 // Start the game
 function startGame() {
+    // Reset score
     score = 0;
-    document.getElementById('score').textContent = score;
+    document.getElementById('score').textContent = `Score: ${score}`;
+    
+    // Update button visibility
     document.getElementById('startButton').style.display = 'none';
     document.getElementById('restartButton').style.display = 'inline-block';
     
+    // Make sure the canvas is visible
+    canvas.style.display = 'block';
+    
+    // Initialize the game
     initializeBoard();
     gameRunning = true;
-    gameLoop();
+    
+    // Start the game loop
+    requestAnimationFrame(gameLoop);
 }
 
 // Main game loop
@@ -601,7 +607,7 @@ function updateScore(matchCount) {
     // Each match is worth 10 points multiplied by the number of matches
     const points = matchCount * 10;
     score += points;
-    document.getElementById('score').textContent = score;
+    document.getElementById('score').textContent = `Score: ${score}`;
 }
 
 // Check if the game is over
