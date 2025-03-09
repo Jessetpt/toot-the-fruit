@@ -67,29 +67,35 @@
             height: 75px;
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1); /* Lighter shadow for dark background */
-            transition: transform 0.3s ease;
+            transition: all 0.3s ease;
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
-            background-color: rgba(255, 255, 255, 0.1); /* Slight highlight for tile backgrounds */
-            border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border */
+            border: 2px solid rgba(255, 255, 255, 0.3); /* Default border */
         }
 
         .preview-tile:hover {
-            transform: translateY(-5px);
+            transform: translateY(-5px) scale(1.05);
             box-shadow: 0 8px 20px rgba(32, 156, 189, 0.3); /* Blue glow on hover */
+            border-color: rgba(255, 255, 255, 0.6); /* Brighter border on hover */
         }
 
         .banana {
             background-image: url('images/banana.png');
+            background-color: #209CBD; /* Blue background for banana */
+            border-color: #1a7e9b; /* Slightly darker blue border */
         }
 
         .orange {
             background-image: url('images/orange.png');
+            background-color: #FFFFFF; /* White background for orange */
+            border-color: #dddddd; /* Light gray border */
         }
 
         .apple {
             background-image: url('images/apple.png');
+            background-color: #F68318; /* Orange background for apple */
+            border-color: #d56c0e; /* Slightly darker orange border */
         }
 
         #emailForm {
