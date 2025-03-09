@@ -96,6 +96,11 @@ function init() {
     // Set canvas dimensions - keep fixed size for consistency
     canvas.width = BOARD_WIDTH;
     canvas.height = BOARD_HEIGHT;
+
+    // Ensure the canvas has the right styling for consistency
+    canvas.style.border = '3px solid #209CBD';
+    canvas.style.backgroundColor = '#FFFFFF';
+    canvas.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.3)';
     
     // Add event listeners
     canvas.addEventListener('click', handleClick);
@@ -109,16 +114,19 @@ function init() {
     document.getElementById('playAgainButton').addEventListener('click', closeModal);
     document.getElementById('highScoreForm').addEventListener('submit', submitHighScore);
     
-    // Load images and initialize board
     loadImages().then(() => {
         console.log('All images loaded successfully');
+        
+        // Initialize and draw the board
         initializeBoard();
         drawBoard();
+        
+        // Update score display
         document.getElementById('score').textContent = `Score: ${score}`;
     }).catch(error => {
         console.error('Error loading images:', error);
     });
-}
+};
 
 // Load all the sprite images
 async function loadImages() {
@@ -278,12 +286,35 @@ function gameLoop() {
 
 // Draw the game board
 function drawBoard() {
+    // Check if we should render at all
+    if (!canvas || !ctx) return;
+    
     // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Draw background grid
+    // Draw background grid - using white consistently
     ctx.fillStyle = '#FFFFFF'; // White background
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw grid lines for better visibility
+    ctx.strokeStyle = 'rgba(32, 156, 189, 0.2)'; // Light blue grid lines
+    ctx.lineWidth = 1;
+    
+    // Draw vertical grid lines
+    for (let col = 1; col < GRID_SIZE; col++) {
+        ctx.beginPath();
+        ctx.moveTo(col * TILE_SIZE, 0);
+        ctx.lineTo(col * TILE_SIZE, canvas.height);
+        ctx.stroke();
+    }
+    
+    // Draw horizontal grid lines
+    for (let row = 1; row < GRID_SIZE; row++) {
+        ctx.beginPath();
+        ctx.moveTo(0, row * TILE_SIZE);
+        ctx.lineTo(canvas.width, row * TILE_SIZE);
+        ctx.stroke();
+    }
     
     // Draw each tile
     for (let row = 0; row < GRID_SIZE; row++) {
@@ -318,9 +349,6 @@ function drawBoard() {
                 ctx.lineWidth = 2;
                 ctx.strokeRect(col * TILE_SIZE + glowSize/2, row * TILE_SIZE + glowSize/2, 
                               TILE_SIZE - glowSize, TILE_SIZE - glowSize);
-                
-                // Log the selection state to help debugging
-                console.log("Drawing selected tile at:", row, col, "with pulse:", pulseAmount);
             }
             
             if (tileType !== EMPTY) {
@@ -374,7 +402,7 @@ function createGameStartOverlay() {
     gameStartOverlay.style.animation = 'fadeIn 0.8s';
     gameStartOverlay.style.overflowY = 'auto';
     
-    // Check if we're on a mobile device
+    // Check if we're on a mobile device - we'll use the same styling for desktop, but track for logging
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     console.log("Is mobile device:", isMobile);
     
@@ -396,62 +424,64 @@ function createGameStartOverlay() {
                 50% { transform: scale(1.05); }
                 100% { transform: scale(1); }
             }
-            /* Mobile adjustments */
+            /* Make styles consistent across all devices */
+            .start-button {
+                background-color: #F68318 !important;
+                color: #FFFFFF !important;
+                padding: 15px 30px !important;
+                border-radius: 50px !important;
+                font-size: 22px !important;
+                font-weight: bold !important;
+                box-shadow: 0 0 30px rgba(246, 131, 24, 0.8) !important;
+                margin: 20px !important;
+                cursor: pointer !important;
+                animation: pulse 1.5s infinite !important;
+                text-align: center !important;
+                user-select: none !important;
+            }
+            .game-title {
+                color: #209CBD !important;
+                font-size: 32px !important;
+                margin-bottom: 20px !important;
+                text-shadow: 0 0 10px rgba(32, 156, 189, 0.5) !important;
+                text-align: center !important;
+            }
+            .game-instructions {
+                color: #FFFFFF !important;
+                font-size: 18px !important;
+                text-align: center !important;
+                margin-top: 20px !important;
+                max-width: 80% !important;
+            }
             @media (max-width: 768px) {
                 .start-button {
-                    padding: 15px 30px !important;
-                    font-size: 20px !important;
-                    margin: 15px !important;
+                    padding: 12px 25px !important;
+                    font-size: 18px !important;
                 }
                 .game-title {
                     font-size: 28px !important;
-                    margin-bottom: 15px !important;
                 }
                 .game-instructions {
                     font-size: 16px !important;
-                    margin-top: 15px !important;
                 }
             }
         `;
         document.head.appendChild(style);
     }
     
-    // Create a prominent start button
+    // Create a prominent start button - using classes for consistent styling
     const startButton = document.createElement('div');
     startButton.className = 'start-button';
-    startButton.style.backgroundColor = '#F68318'; // Orange
-    startButton.style.color = '#FFFFFF'; // White
-    startButton.style.padding = isMobile ? '15px 30px' : '20px 40px';
-    startButton.style.borderRadius = '50px';
-    startButton.style.fontSize = isMobile ? '20px' : '24px';
-    startButton.style.fontWeight = 'bold';
-    startButton.style.boxShadow = '0 0 30px rgba(246, 131, 24, 0.8)'; // Orange glow
-    startButton.style.margin = isMobile ? '15px' : '20px';
-    startButton.style.cursor = 'pointer';
-    startButton.style.animation = 'pulse 1.5s infinite';
-    startButton.style.textAlign = 'center';
-    startButton.style.userSelect = 'none';
-    startButton.style.webkitTapHighlightColor = 'transparent';
     startButton.textContent = 'START GAME';
     
-    // Create a heading for the overlay
+    // Create a heading for the overlay - using classes for consistent styling
     const heading = document.createElement('h2');
     heading.className = 'game-title';
-    heading.style.color = '#209CBD'; // Blue
-    heading.style.fontSize = isMobile ? '28px' : '36px';
-    heading.style.marginBottom = isMobile ? '15px' : '20px';
-    heading.style.textShadow = '0 0 10px rgba(32, 156, 189, 0.5)'; // Blue glow
-    heading.style.textAlign = 'center';
     heading.textContent = 'Toot Your Own Horn';
     
-    // Create instructions
+    // Create instructions - using classes for consistent styling
     const instructions = document.createElement('p');
     instructions.className = 'game-instructions';
-    instructions.style.color = '#FFFFFF'; // White
-    instructions.style.fontSize = isMobile ? '16px' : '18px';
-    instructions.style.maxWidth = '80%';
-    instructions.style.textAlign = 'center';
-    instructions.style.marginTop = isMobile ? '15px' : '20px';
     instructions.innerHTML = 'Match fruits with fruits and vegetables with vegetables.<br>Make groups of 3 or more to score points!';
     
     // Add elements to the overlay
