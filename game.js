@@ -353,9 +353,11 @@ function drawBoard() {
 
 // Create and show the game start overlay
 function createGameStartOverlay() {
+    console.log("Creating game start overlay");
+    
     // Create the overlay
     gameStartOverlay = document.createElement('div');
-    gameStartOverlay.style.position = 'absolute';
+    gameStartOverlay.style.position = 'fixed'; // Changed from absolute to fixed for better mobile support
     gameStartOverlay.style.top = '0';
     gameStartOverlay.style.left = '0';
     gameStartOverlay.style.width = '100%';
@@ -369,6 +371,11 @@ function createGameStartOverlay() {
     gameStartOverlay.style.cursor = 'pointer';
     gameStartOverlay.style.backdropFilter = 'blur(5px)';
     gameStartOverlay.style.animation = 'fadeIn 0.8s';
+    gameStartOverlay.style.overflowY = 'auto'; // Allow scrolling if needed on very small screens
+    
+    // Check if we're on a mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    console.log("Is mobile device:", isMobile);
     
     // Add animation styles if not already present
     if (!document.getElementById('game-animations')) {
@@ -388,39 +395,62 @@ function createGameStartOverlay() {
                 50% { transform: scale(1.05); }
                 100% { transform: scale(1); }
             }
+            /* Mobile adjustments */
+            @media (max-width: 768px) {
+                .start-button {
+                    padding: 15px 30px !important;
+                    font-size: 20px !important;
+                    margin: 15px !important;
+                }
+                .game-title {
+                    font-size: 28px !important;
+                    margin-bottom: 15px !important;
+                }
+                .game-instructions {
+                    font-size: 16px !important;
+                    margin-top: 15px !important;
+                }
+            }
         `;
         document.head.appendChild(style);
     }
     
     // Create a prominent start button
     const startButton = document.createElement('div');
+    startButton.className = 'start-button'; // Add class for CSS targeting
     startButton.style.backgroundColor = '#4a89dc';
     startButton.style.color = 'white';
-    startButton.style.padding = '20px 40px';
+    startButton.style.padding = isMobile ? '15px 30px' : '20px 40px';
     startButton.style.borderRadius = '50px';
-    startButton.style.fontSize = '24px';
+    startButton.style.fontSize = isMobile ? '20px' : '24px';
     startButton.style.fontWeight = 'bold';
     startButton.style.boxShadow = '0 0 30px rgba(74, 137, 220, 0.8)';
-    startButton.style.margin = '20px';
+    startButton.style.margin = isMobile ? '15px' : '20px';
     startButton.style.cursor = 'pointer';
     startButton.style.animation = 'pulse 1.5s infinite';
+    startButton.style.textAlign = 'center';
+    startButton.style.userSelect = 'none'; // Prevent text selection
+    startButton.style.webkitTapHighlightColor = 'transparent'; // Remove tap highlight on mobile
     startButton.textContent = 'START GAME';
     
     // Create a heading for the overlay
     const heading = document.createElement('h2');
+    heading.className = 'game-title'; // Add class for CSS targeting
     heading.style.color = 'white';
-    heading.style.fontSize = '36px';
-    heading.style.marginBottom = '20px';
+    heading.style.fontSize = isMobile ? '28px' : '36px';
+    heading.style.marginBottom = isMobile ? '15px' : '20px';
     heading.style.textShadow = '0 0 10px rgba(255,255,255,0.5)';
+    heading.style.textAlign = 'center';
     heading.textContent = 'Toot Your Own Horn';
     
     // Create instructions
     const instructions = document.createElement('p');
+    instructions.className = 'game-instructions'; // Add class for CSS targeting
     instructions.style.color = 'white';
-    instructions.style.fontSize = '18px';
+    instructions.style.fontSize = isMobile ? '16px' : '18px';
     instructions.style.maxWidth = '80%';
     instructions.style.textAlign = 'center';
-    instructions.style.marginTop = '20px';
+    instructions.style.marginTop = isMobile ? '15px' : '20px';
     instructions.innerHTML = 'Match fruits with fruits and vegetables with vegetables.<br>Make groups of 3 or more to score points!';
     
     // Add elements to the overlay
@@ -434,8 +464,22 @@ function createGameStartOverlay() {
         startGameFromOverlay();
     });
     
+    // Also add touch event for mobile
+    startButton.addEventListener('touchend', function(e) {
+        e.preventDefault(); // Prevent default touch behavior
+        e.stopPropagation(); // Prevent the overlay's touch from firing too
+        console.log("Touch detected on start button");
+        startGameFromOverlay();
+    });
+    
     // Also allow clicking anywhere on the overlay to start
     gameStartOverlay.addEventListener('click', startGameFromOverlay);
+    
+    // Add touch event for mobile
+    gameStartOverlay.addEventListener('touchend', function(e) {
+        console.log("Touch detected on overlay");
+        startGameFromOverlay();
+    });
     
     // Add to the game container
     const gameContainer = document.querySelector('.game-container');
@@ -446,11 +490,18 @@ function createGameStartOverlay() {
     
     // Make sure the restart button is ready to be shown later
     document.getElementById('restartButton').style.display = 'none';
+    
+    console.log("Overlay created and added to DOM");
 }
 
 // Function to start the game from the overlay
 function startGameFromOverlay() {
     if (!gameStartOverlay) return;
+    
+    console.log("Starting game from overlay");
+    
+    // Prevent multiple clicks
+    gameStartOverlay.style.pointerEvents = 'none';
     
     // Animate the overlay disappearing
     gameStartOverlay.style.animation = 'fadeOut 0.5s';
@@ -459,7 +510,12 @@ function startGameFromOverlay() {
     setTimeout(() => {
         const gameContainer = document.querySelector('.game-container');
         if (gameStartOverlay && gameStartOverlay.parentNode === gameContainer) {
-            gameContainer.removeChild(gameStartOverlay);
+            try {
+                gameContainer.removeChild(gameStartOverlay);
+                console.log("Overlay removed from DOM");
+            } catch (e) {
+                console.error("Error removing overlay:", e);
+            }
         }
         gameStartOverlay = null;
         
