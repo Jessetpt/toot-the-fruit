@@ -42,13 +42,13 @@ const tileImages = {
 
 // Fallback colors if images fail to load
 const tileColors = {
-    [EMPTY]: '#000000',
-    [FRUIT_1]: '#FF0000', // Red (Apple)
-    [FRUIT_2]: '#FFA500', // Orange
-    [FRUIT_3]: '#FFFF00', // Yellow (Banana)
-    [VEG_1]: '#00FF00', // Green (Broccoli)
-    [VEG_2]: '#800080', // Purple (Eggplant)
-    [VEG_3]: '#FFC0CB', // Pink (Radish)
+    [EMPTY]: '#000000', // Black
+    [FRUIT_1]: '#F68318', // Orange (Apple)
+    [FRUIT_2]: '#F68318', // Orange (Orange)
+    [FRUIT_3]: '#F68318', // Orange (Banana)
+    [VEG_1]: '#209CBD', // Blue (Broccoli)
+    [VEG_2]: '#209CBD', // Blue (Eggplant)
+    [VEG_3]: '#209CBD', // Blue (Radish)
 };
 
 // Tile names for future reference
@@ -282,7 +282,7 @@ function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Draw background grid
-    ctx.fillStyle = '#add8e6'; // Light blue background
+    ctx.fillStyle = '#FFFFFF'; // White background
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // Draw each tile
@@ -292,14 +292,13 @@ function drawBoard() {
             
             // Draw tile background - highlight if selected
             if (selectedTile && selectedTile.row === row && selectedTile.col === col) {
-                // Draw a more prominent highlight for the selected tile
                 // Calculate a pulsating color effect for the background
                 const pulseAmount = (Math.sin(Date.now() / 200) + 1) / 2; // Value between 0 and 1
                 
-                // Create a pulsing background color (yellow to orange)
-                const r = Math.floor(255);
-                const g = Math.floor(255 - pulseAmount * 100); // Pulsing from yellow to more orange
-                const b = Math.floor(pulseAmount * 100);
+                // Create a pulsing background color (blue to orange)
+                const r = Math.floor(246 - pulseAmount * 214); // Transition from orange to blue
+                const g = Math.floor(131 - pulseAmount * (131 - 156)); // Transition from orange to blue
+                const b = Math.floor(24 + pulseAmount * 165); // Transition from orange to blue
                 ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
                 
                 // Fill the background
@@ -309,13 +308,13 @@ function drawBoard() {
                 const glowSize = 3 + pulseAmount * 4; // Pulsing between 3 and 7 pixels
                 
                 // Draw a glowing border for the selected tile
-                ctx.strokeStyle = '#ff0000'; // Red border
+                ctx.strokeStyle = '#000000'; // Black border
                 ctx.lineWidth = 4;
                 ctx.strokeRect(col * TILE_SIZE + glowSize, row * TILE_SIZE + glowSize, 
                               TILE_SIZE - glowSize * 2, TILE_SIZE - glowSize * 2);
                 
                 // Add a secondary inner glow for emphasis
-                ctx.strokeStyle = '#ffff00'; // Yellow inner border
+                ctx.strokeStyle = '#FFFFFF'; // White inner border
                 ctx.lineWidth = 2;
                 ctx.strokeRect(col * TILE_SIZE + glowSize/2, row * TILE_SIZE + glowSize/2, 
                               TILE_SIZE - glowSize, TILE_SIZE - glowSize);
@@ -331,13 +330,15 @@ function drawBoard() {
                         ctx.drawImage(images[tileType], col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                     } else {
                         // Fallback if image not loaded
-                        ctx.fillStyle = tileColors[tileType];
+                        // Use the color scheme based on type: fruits get orange, veggies get blue
+                        const isFruit = tileType >= FRUIT_1 && tileType <= FRUIT_3;
+                        ctx.fillStyle = isFruit ? '#F68318' : '#209CBD'; // Orange for fruits, Blue for veggies
                         ctx.beginPath();
                         ctx.arc(col * TILE_SIZE + TILE_SIZE/2, row * TILE_SIZE + TILE_SIZE/2, TILE_SIZE/2 - 5, 0, Math.PI * 2);
                         ctx.fill();
                         
                         // Draw tile type indicator as fallback
-                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillStyle = '#FFFFFF'; // White text
                         ctx.font = '16px Arial';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
@@ -357,12 +358,12 @@ function createGameStartOverlay() {
     
     // Create the overlay
     gameStartOverlay = document.createElement('div');
-    gameStartOverlay.style.position = 'fixed'; // Changed from absolute to fixed for better mobile support
+    gameStartOverlay.style.position = 'fixed';
     gameStartOverlay.style.top = '0';
     gameStartOverlay.style.left = '0';
     gameStartOverlay.style.width = '100%';
     gameStartOverlay.style.height = '100%';
-    gameStartOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    gameStartOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'; // Black with transparency
     gameStartOverlay.style.display = 'flex';
     gameStartOverlay.style.flexDirection = 'column';
     gameStartOverlay.style.justifyContent = 'center';
@@ -371,7 +372,7 @@ function createGameStartOverlay() {
     gameStartOverlay.style.cursor = 'pointer';
     gameStartOverlay.style.backdropFilter = 'blur(5px)';
     gameStartOverlay.style.animation = 'fadeIn 0.8s';
-    gameStartOverlay.style.overflowY = 'auto'; // Allow scrolling if needed on very small screens
+    gameStartOverlay.style.overflowY = 'auto';
     
     // Check if we're on a mobile device
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -417,36 +418,36 @@ function createGameStartOverlay() {
     
     // Create a prominent start button
     const startButton = document.createElement('div');
-    startButton.className = 'start-button'; // Add class for CSS targeting
-    startButton.style.backgroundColor = '#4a89dc';
-    startButton.style.color = 'white';
+    startButton.className = 'start-button';
+    startButton.style.backgroundColor = '#F68318'; // Orange
+    startButton.style.color = '#FFFFFF'; // White
     startButton.style.padding = isMobile ? '15px 30px' : '20px 40px';
     startButton.style.borderRadius = '50px';
     startButton.style.fontSize = isMobile ? '20px' : '24px';
     startButton.style.fontWeight = 'bold';
-    startButton.style.boxShadow = '0 0 30px rgba(74, 137, 220, 0.8)';
+    startButton.style.boxShadow = '0 0 30px rgba(246, 131, 24, 0.8)'; // Orange glow
     startButton.style.margin = isMobile ? '15px' : '20px';
     startButton.style.cursor = 'pointer';
     startButton.style.animation = 'pulse 1.5s infinite';
     startButton.style.textAlign = 'center';
-    startButton.style.userSelect = 'none'; // Prevent text selection
-    startButton.style.webkitTapHighlightColor = 'transparent'; // Remove tap highlight on mobile
+    startButton.style.userSelect = 'none';
+    startButton.style.webkitTapHighlightColor = 'transparent';
     startButton.textContent = 'START GAME';
     
     // Create a heading for the overlay
     const heading = document.createElement('h2');
-    heading.className = 'game-title'; // Add class for CSS targeting
-    heading.style.color = 'white';
+    heading.className = 'game-title';
+    heading.style.color = '#209CBD'; // Blue
     heading.style.fontSize = isMobile ? '28px' : '36px';
     heading.style.marginBottom = isMobile ? '15px' : '20px';
-    heading.style.textShadow = '0 0 10px rgba(255,255,255,0.5)';
+    heading.style.textShadow = '0 0 10px rgba(32, 156, 189, 0.5)'; // Blue glow
     heading.style.textAlign = 'center';
     heading.textContent = 'Toot Your Own Horn';
     
     // Create instructions
     const instructions = document.createElement('p');
-    instructions.className = 'game-instructions'; // Add class for CSS targeting
-    instructions.style.color = 'white';
+    instructions.className = 'game-instructions';
+    instructions.style.color = '#FFFFFF'; // White
     instructions.style.fontSize = isMobile ? '16px' : '18px';
     instructions.style.maxWidth = '80%';
     instructions.style.textAlign = 'center';
@@ -460,19 +461,19 @@ function createGameStartOverlay() {
     
     // Add click event to start the game
     startButton.addEventListener('click', function(e) {
-        e.stopPropagation(); // Prevent the overlay's click from firing too
+        e.stopPropagation();
         startGameFromOverlay();
     });
     
     // Also add touch event for mobile
     startButton.addEventListener('touchend', function(e) {
-        e.preventDefault(); // Prevent default touch behavior
-        e.stopPropagation(); // Prevent the overlay's touch from firing too
+        e.preventDefault();
+        e.stopPropagation();
         console.log("Touch detected on start button");
         startGameFromOverlay();
     });
     
-    // Also allow clicking anywhere on the overlay to start
+    // Allow clicking anywhere on the overlay to start
     gameStartOverlay.addEventListener('click', startGameFromOverlay);
     
     // Add touch event for mobile
