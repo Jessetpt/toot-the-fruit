@@ -72,10 +72,14 @@ let lastFrameTime = 0;
 
 // Add this global variable near the top with other game variables
 let showingStartPrompt = false;
+let gameStartOverlay = null;
 
 // Initialize the game
 window.onload = function() {
     init();
+    
+    // Create the start game overlay immediately
+    createGameStartOverlay();
     
     // Start animation loop immediately for UI responsiveness (selections, etc.)
     startAnimationLoop();
@@ -205,17 +209,24 @@ function initializeBoard() {
 
 // Start the game
 function startGame() {
-    console.log("Starting game...");
-    
     // Reset score
     score = 0;
     document.getElementById('score').textContent = `Score: ${score}`;
+    
+    // If restarting, hide any leftover overlay
+    if (gameStartOverlay) {
+        const gameContainer = document.querySelector('.game-container');
+        if (gameStartOverlay.parentNode === gameContainer) {
+            gameContainer.removeChild(gameStartOverlay);
+        }
+        gameStartOverlay = null;
+    }
     
     // Update button visibility
     document.getElementById('startButton').style.display = 'none';
     document.getElementById('restartButton').style.display = 'inline-block';
     
-    // Make sure the canvas is visible - be extra explicit for mobile
+    // Make sure the canvas is visible
     canvas.style.display = 'block';
     canvas.style.visibility = 'visible';
     canvas.style.opacity = '1';
@@ -340,77 +351,131 @@ function drawBoard() {
     }
 }
 
-// This function shows a prompt to press Start Game
-function showStartGamePrompt() {
-    if (showingStartPrompt) return; // Prevent multiple prompts
+// Create and show the game start overlay
+function createGameStartOverlay() {
+    // Create the overlay
+    gameStartOverlay = document.createElement('div');
+    gameStartOverlay.style.position = 'absolute';
+    gameStartOverlay.style.top = '0';
+    gameStartOverlay.style.left = '0';
+    gameStartOverlay.style.width = '100%';
+    gameStartOverlay.style.height = '100%';
+    gameStartOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    gameStartOverlay.style.display = 'flex';
+    gameStartOverlay.style.flexDirection = 'column';
+    gameStartOverlay.style.justifyContent = 'center';
+    gameStartOverlay.style.alignItems = 'center';
+    gameStartOverlay.style.zIndex = '1000';
+    gameStartOverlay.style.cursor = 'pointer';
+    gameStartOverlay.style.backdropFilter = 'blur(5px)';
+    gameStartOverlay.style.animation = 'fadeIn 0.8s';
     
-    showingStartPrompt = true;
+    // Add animation styles if not already present
+    if (!document.getElementById('game-animations')) {
+        const style = document.createElement('style');
+        style.id = 'game-animations';
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+                100% { transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
     
-    // Create a temporary popup message
-    const popup = document.createElement('div');
-    popup.style.position = 'absolute';
-    popup.style.top = '50%';
-    popup.style.left = '50%';
-    popup.style.transform = 'translate(-50%, -50%)';
-    popup.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-    popup.style.color = 'white';
-    popup.style.padding = '20px';
-    popup.style.borderRadius = '10px';
-    popup.style.textAlign = 'center';
-    popup.style.zIndex = '1000';
-    popup.style.fontSize = '20px';
-    popup.style.fontWeight = 'bold';
-    popup.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.5)';
-    popup.style.border = '2px solid #4287f5';
-    popup.style.animation = 'fadeIn 0.5s';
+    // Create a prominent start button
+    const startButton = document.createElement('div');
+    startButton.style.backgroundColor = '#4a89dc';
+    startButton.style.color = 'white';
+    startButton.style.padding = '20px 40px';
+    startButton.style.borderRadius = '50px';
+    startButton.style.fontSize = '24px';
+    startButton.style.fontWeight = 'bold';
+    startButton.style.boxShadow = '0 0 30px rgba(74, 137, 220, 0.8)';
+    startButton.style.margin = '20px';
+    startButton.style.cursor = 'pointer';
+    startButton.style.animation = 'pulse 1.5s infinite';
+    startButton.textContent = 'START GAME';
     
-    // Add animation style
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
-        }
-    `;
-    document.head.appendChild(style);
+    // Create a heading for the overlay
+    const heading = document.createElement('h2');
+    heading.style.color = 'white';
+    heading.style.fontSize = '36px';
+    heading.style.marginBottom = '20px';
+    heading.style.textShadow = '0 0 10px rgba(255,255,255,0.5)';
+    heading.textContent = 'Toot Your Own Horn';
     
-    // Set the message
-    popup.textContent = 'Press "Start Game" to play!';
+    // Create instructions
+    const instructions = document.createElement('p');
+    instructions.style.color = 'white';
+    instructions.style.fontSize = '18px';
+    instructions.style.maxWidth = '80%';
+    instructions.style.textAlign = 'center';
+    instructions.style.marginTop = '20px';
+    instructions.innerHTML = 'Match fruits with fruits and vegetables with vegetables.<br>Make groups of 3 or more to score points!';
+    
+    // Add elements to the overlay
+    gameStartOverlay.appendChild(heading);
+    gameStartOverlay.appendChild(startButton);
+    gameStartOverlay.appendChild(instructions);
+    
+    // Add click event to start the game
+    startButton.addEventListener('click', function(e) {
+        e.stopPropagation(); // Prevent the overlay's click from firing too
+        startGameFromOverlay();
+    });
+    
+    // Also allow clicking anywhere on the overlay to start
+    gameStartOverlay.addEventListener('click', startGameFromOverlay);
     
     // Add to the game container
     const gameContainer = document.querySelector('.game-container');
-    gameContainer.appendChild(popup);
+    gameContainer.appendChild(gameStartOverlay);
     
-    // Highlight the start button
-    const startButton = document.getElementById('startButton');
-    const originalBackground = startButton.style.background;
-    startButton.style.background = 'linear-gradient(45deg, #ff5e00, #ff0062)';
-    startButton.style.transform = 'scale(1.1)';
-    startButton.style.boxShadow = '0 0 20px rgba(255, 100, 50, 0.8)';
-    startButton.style.transition = 'all 0.3s ease';
+    // Hide the start button since we're using the overlay instead
+    document.getElementById('startButton').style.display = 'none';
     
-    // Remove the popup after 3 seconds
+    // Make sure the restart button is ready to be shown later
+    document.getElementById('restartButton').style.display = 'none';
+}
+
+// Function to start the game from the overlay
+function startGameFromOverlay() {
+    if (!gameStartOverlay) return;
+    
+    // Animate the overlay disappearing
+    gameStartOverlay.style.animation = 'fadeOut 0.5s';
+    
+    // After animation, remove overlay and start the game
     setTimeout(() => {
-        popup.style.animation = 'fadeOut 0.5s';
-        setTimeout(() => {
-            gameContainer.removeChild(popup);
-            startButton.style.background = originalBackground;
-            startButton.style.transform = '';
-            startButton.style.boxShadow = '';
-            showingStartPrompt = false;
-        }, 500);
-    }, 3000);
+        const gameContainer = document.querySelector('.game-container');
+        if (gameStartOverlay && gameStartOverlay.parentNode === gameContainer) {
+            gameContainer.removeChild(gameStartOverlay);
+        }
+        gameStartOverlay = null;
+        
+        // Show the restart button
+        document.getElementById('restartButton').style.display = 'inline-block';
+        
+        // Start the game
+        startGame();
+    }, 500);
 }
 
 // Handle touch start event
 function handleTouchStart(event) {
     if (!gameRunning) {
-        // Game hasn't started, show prompt
-        showStartGamePrompt();
+        // Game hasn't started, but no need to show popup now
+        // as we have the overlay
         return;
     }
     
@@ -450,7 +515,6 @@ function handleTouchStart(event) {
 // Handle touch end event
 function handleTouchEnd(event) {
     if (!gameRunning) {
-        // No need to show prompt here since it's shown in handleTouchStart
         return;
     }
     
@@ -577,8 +641,6 @@ function handleTouchEnd(event) {
 // Handle tile click
 function handleClick(event) {
     if (!gameRunning) {
-        // Game hasn't started, show prompt
-        showStartGamePrompt();
         return;
     }
     
