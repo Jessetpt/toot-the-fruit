@@ -8,6 +8,12 @@ const FRUIT_TYPES = 3; // 3 types of fruits
 const VEG_TYPES = 3; // 3 types of vegetables
 const MATCH_MIN = 3; // Minimum 3 in a row to match
 
+// Color scheme constants
+const COLOR_BLUE = '#209CBD'; // Blue/Teal
+const COLOR_ORANGE = '#F68318'; // Orange
+const COLOR_BLACK = '#000000'; // Black
+const COLOR_WHITE = '#FFFFFF'; // White
+
 // Game variables
 let canvas, ctx;
 let board = [];
@@ -19,6 +25,14 @@ let isMobileDevice = false; // Flag to detect mobile device
 
 // Image objects for sprites
 let images = {};
+
+// Global variables for animation
+let animationRunning = false;
+let lastFrameTime = 0;
+
+// Add this global variable near the top with other game variables
+let gameStartOverlay = null;
+let showingStartPrompt = false;
 
 // Tile types
 const EMPTY = 0;
@@ -40,20 +54,9 @@ const tileImages = {
     [VEG_3]: 'images/radish.png' // Ensure this path is correct
 };
 
-// Fallback colors if images fail to load
-const tileColors = {
-    [EMPTY]: '#000000', // Black
-    [FRUIT_1]: '#F68318', // Orange (Apple)
-    [FRUIT_2]: '#F68318', // Orange (Orange)
-    [FRUIT_3]: '#F68318', // Orange (Banana)
-    [VEG_1]: '#209CBD', // Blue (Broccoli)
-    [VEG_2]: '#209CBD', // Blue (Eggplant)
-    [VEG_3]: '#209CBD', // Blue (Radish)
-};
-
-// Tile names for future reference
+// Tile names for fallback display
 const tileNames = {
-    [EMPTY]: 'Empty',
+    [EMPTY]: '',
     [FRUIT_1]: 'Apple',
     [FRUIT_2]: 'Orange',
     [FRUIT_3]: 'Banana',
@@ -62,17 +65,20 @@ const tileNames = {
     [VEG_3]: 'Radish',
 };
 
+// Fallback colors if images fail to load
+const tileColors = {
+    [EMPTY]: COLOR_BLACK, // Black
+    [FRUIT_1]: COLOR_ORANGE, // Orange (Apple)
+    [FRUIT_2]: COLOR_ORANGE, // Orange (Orange)
+    [FRUIT_3]: COLOR_ORANGE, // Orange (Banana)
+    [VEG_1]: COLOR_BLUE, // Blue (Broccoli)
+    [VEG_2]: COLOR_BLUE, // Blue (Eggplant)
+    [VEG_3]: COLOR_BLUE, // Blue (Radish)
+};
+
 // Variables for touch events
 let touchStartX = null;
 let touchStartY = null;
-
-// Global variables for animation
-let animationRunning = false;
-let lastFrameTime = 0;
-
-// Add this global variable near the top with other game variables
-let showingStartPrompt = false;
-let gameStartOverlay = null;
 
 // Initialize the game
 window.onload = function() {
@@ -98,8 +104,8 @@ function init() {
     canvas.height = BOARD_HEIGHT;
 
     // Ensure the canvas has the right styling for consistency
-    canvas.style.border = '3px solid #209CBD';
-    canvas.style.backgroundColor = '#FFFFFF';
+    canvas.style.border = `3px solid ${COLOR_BLUE}`;
+    canvas.style.backgroundColor = COLOR_WHITE;
     canvas.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.3)';
     
     // Add event listeners
@@ -293,11 +299,11 @@ function drawBoard() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // Draw background grid - using white consistently
-    ctx.fillStyle = '#FFFFFF'; // White background
+    ctx.fillStyle = COLOR_WHITE; // White background
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // Draw grid lines for better visibility
-    ctx.strokeStyle = 'rgba(32, 156, 189, 0.2)'; // Light blue grid lines
+    ctx.strokeStyle = `rgba(32, 156, 189, 0.2)`; // Light blue grid lines
     ctx.lineWidth = 1;
     
     // Draw vertical grid lines
@@ -327,9 +333,14 @@ function drawBoard() {
                 const pulseAmount = (Math.sin(Date.now() / 200) + 1) / 2; // Value between 0 and 1
                 
                 // Create a pulsing background color (blue to orange)
-                const r = Math.floor(246 - pulseAmount * 214); // Transition from orange to blue
-                const g = Math.floor(131 - pulseAmount * (131 - 156)); // Transition from orange to blue
-                const b = Math.floor(24 + pulseAmount * 165); // Transition from orange to blue
+                // Interpolate between COLOR_ORANGE and COLOR_BLUE
+                const orangeRGB = hexToRgb(COLOR_ORANGE);
+                const blueRGB = hexToRgb(COLOR_BLUE);
+                
+                const r = Math.floor(orangeRGB.r - pulseAmount * (orangeRGB.r - blueRGB.r));
+                const g = Math.floor(orangeRGB.g - pulseAmount * (orangeRGB.g - blueRGB.g));
+                const b = Math.floor(orangeRGB.b - pulseAmount * (orangeRGB.b - blueRGB.b));
+                
                 ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
                 
                 // Fill the background
@@ -339,13 +350,13 @@ function drawBoard() {
                 const glowSize = 3 + pulseAmount * 4; // Pulsing between 3 and 7 pixels
                 
                 // Draw a glowing border for the selected tile
-                ctx.strokeStyle = '#000000'; // Black border
+                ctx.strokeStyle = COLOR_BLACK; // Black border
                 ctx.lineWidth = 4;
                 ctx.strokeRect(col * TILE_SIZE + glowSize, row * TILE_SIZE + glowSize, 
                               TILE_SIZE - glowSize * 2, TILE_SIZE - glowSize * 2);
                 
                 // Add a secondary inner glow for emphasis
-                ctx.strokeStyle = '#FFFFFF'; // White inner border
+                ctx.strokeStyle = COLOR_WHITE; // White inner border
                 ctx.lineWidth = 2;
                 ctx.strokeRect(col * TILE_SIZE + glowSize/2, row * TILE_SIZE + glowSize/2, 
                               TILE_SIZE - glowSize, TILE_SIZE - glowSize);
@@ -358,15 +369,13 @@ function drawBoard() {
                         ctx.drawImage(images[tileType], col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                     } else {
                         // Fallback if image not loaded
-                        // Use the color scheme based on type: fruits get orange, veggies get blue
-                        const isFruit = tileType >= FRUIT_1 && tileType <= FRUIT_3;
-                        ctx.fillStyle = isFruit ? '#F68318' : '#209CBD'; // Orange for fruits, Blue for veggies
+                        ctx.fillStyle = tileColors[tileType];
                         ctx.beginPath();
                         ctx.arc(col * TILE_SIZE + TILE_SIZE/2, row * TILE_SIZE + TILE_SIZE/2, TILE_SIZE/2 - 5, 0, Math.PI * 2);
                         ctx.fill();
                         
                         // Draw tile type indicator as fallback
-                        ctx.fillStyle = '#FFFFFF'; // White text
+                        ctx.fillStyle = COLOR_WHITE; // White text
                         ctx.font = '16px Arial';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
@@ -380,6 +389,19 @@ function drawBoard() {
     }
 }
 
+// Helper function to convert hex color to RGB
+function hexToRgb(hex) {
+    // Remove the # if present
+    hex = hex.replace(/^#/, '');
+    
+    // Parse the hex values
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    
+    return { r, g, b };
+}
+
 // Create and show the game start overlay
 function createGameStartOverlay() {
     console.log("Creating game start overlay");
@@ -391,7 +413,7 @@ function createGameStartOverlay() {
     gameStartOverlay.style.left = '0';
     gameStartOverlay.style.width = '100%';
     gameStartOverlay.style.height = '100%';
-    gameStartOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.8)'; // Black with transparency
+    gameStartOverlay.style.backgroundColor = `rgba(${hexToRgb(COLOR_BLACK).r}, ${hexToRgb(COLOR_BLACK).g}, ${hexToRgb(COLOR_BLACK).b}, 0.8)`; // Black with transparency
     gameStartOverlay.style.display = 'flex';
     gameStartOverlay.style.flexDirection = 'column';
     gameStartOverlay.style.justifyContent = 'center';
@@ -426,8 +448,8 @@ function createGameStartOverlay() {
             }
             /* Make styles consistent across all devices */
             .start-button {
-                background-color: #F68318 !important;
-                color: #FFFFFF !important;
+                background-color: ${COLOR_ORANGE} !important;
+                color: ${COLOR_WHITE} !important;
                 padding: 15px 30px !important;
                 border-radius: 50px !important;
                 font-size: 22px !important;
@@ -440,14 +462,14 @@ function createGameStartOverlay() {
                 user-select: none !important;
             }
             .game-title {
-                color: #209CBD !important;
+                color: ${COLOR_BLUE} !important;
                 font-size: 32px !important;
                 margin-bottom: 20px !important;
                 text-shadow: 0 0 10px rgba(32, 156, 189, 0.5) !important;
                 text-align: center !important;
             }
             .game-instructions {
-                color: #FFFFFF !important;
+                color: ${COLOR_WHITE} !important;
                 font-size: 18px !important;
                 text-align: center !important;
                 margin-top: 20px !important;
@@ -484,10 +506,20 @@ function createGameStartOverlay() {
     instructions.className = 'game-instructions';
     instructions.innerHTML = 'Match fruits with fruits and vegetables with vegetables.<br>Make groups of 3 or more to score points!';
     
+    // Add a logo to the overlay
+    const logo = document.createElement('img');
+    logo.src = 'images/logodark.png';
+    logo.alt = 'Company Logo';
+    logo.style.width = '80px';
+    logo.style.height = 'auto';
+    logo.style.marginTop = '20px';
+    logo.style.opacity = '0.9';
+    
     // Add elements to the overlay
     gameStartOverlay.appendChild(heading);
     gameStartOverlay.appendChild(startButton);
     gameStartOverlay.appendChild(instructions);
+    gameStartOverlay.appendChild(logo);
     
     // Add click event to start the game
     startButton.addEventListener('click', function(e) {

@@ -186,6 +186,20 @@
             font-size: 14px;
         }
         
+        .logo {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 80px;
+            height: auto;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+        
+        .logo:hover {
+            opacity: 1;
+        }
+        
         @media (max-width: 768px) {
             .game-container {
                 width: 100%;
@@ -231,6 +245,12 @@
                 padding: 6px 15px;
                 font-size: 14px;
             }
+            
+            .logo {
+                width: 60px;
+                bottom: 10px;
+                right: 10px;
+            }
         }
     </style>
 </head>
@@ -253,6 +273,9 @@
             <button id="startButton" style="display: none;">Start Game</button>
             <button id="restartButton" style="display: none;">Restart</button>
         </div>
+        
+        <!-- Company Logo -->
+        <img src="images/logodark.png" alt="Company Logo" class="logo">
     </div>
     
     <div id="gameOverModal" class="modal">
@@ -264,6 +287,8 @@
                 <input type="hidden" id="finalScoreInput" name="score">
                 <button type="submit">Submit Score</button>
             </form>
+            <!-- Company Logo in Modal -->
+            <img src="images/logodark.png" alt="Company Logo" style="width: 80px; margin-top: 20px;">
         </div>
     </div>
     <script src="game.js"></script>
