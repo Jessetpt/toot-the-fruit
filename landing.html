@@ -11,7 +11,7 @@
             margin: 0;
             padding: 0;
             min-height: 100vh;
-            background: #FFFFFF; /* Updated to white */
+            background: linear-gradient(to bottom, #000000, #1a1a2e); /* Subtle vertical gradient from black to very dark blue */
             font-family: 'Arial', sans-serif;
             display: flex;
             justify-content: center;
@@ -19,10 +19,10 @@
         }
 
         .container {
-            background: #000000; /* Updated to black */
+            background: linear-gradient(to right, #000000, #161627); /* Subtle horizontal gradient */
             padding: 40px;
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
             text-align: center;
             max-width: 500px;
             width: 90%;
@@ -176,9 +176,14 @@
         }
         
         @media (max-width: 768px) {
+            body {
+                background: linear-gradient(to bottom, #000000, #1a1a2e); /* Ensure gradient works on mobile */
+            }
+            
             .container {
                 padding: 30px 20px;
                 margin: 20px;
+                background: linear-gradient(to right, #000000, #161627); /* Ensure gradient works on mobile */
             }
             
             h1 {
