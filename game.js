@@ -450,41 +450,45 @@ function createGameStartOverlay() {
             .start-button {
                 background-color: ${COLOR_ORANGE} !important;
                 color: ${COLOR_WHITE} !important;
-                padding: 15px 30px !important;
+                padding: 15px 40px !important;
                 border-radius: 50px !important;
                 font-size: 22px !important;
                 font-weight: bold !important;
                 box-shadow: 0 0 30px rgba(246, 131, 24, 0.8) !important;
-                margin: 20px !important;
+                margin: 20px auto 30px auto !important;
                 cursor: pointer !important;
                 animation: pulse 1.5s infinite !important;
                 text-align: center !important;
                 user-select: none !important;
+                display: block !important;
+                width: fit-content !important;
             }
             .game-title {
                 color: ${COLOR_BLUE} !important;
-                font-size: 32px !important;
-                margin-bottom: 20px !important;
+                font-size: 36px !important;
                 text-shadow: 0 0 10px rgba(32, 156, 189, 0.5) !important;
                 text-align: center !important;
+                width: 100% !important;
             }
             .game-instructions {
                 color: ${COLOR_WHITE} !important;
-                font-size: 18px !important;
+                font-size: 20px !important;
                 text-align: center !important;
-                margin-top: 20px !important;
+                margin: 0 auto !important;
                 max-width: 80% !important;
+                line-height: 1.6 !important;
             }
             @media (max-width: 768px) {
                 .start-button {
-                    padding: 12px 25px !important;
+                    padding: 12px 30px !important;
                     font-size: 18px !important;
+                    margin: 15px auto 25px auto !important;
                 }
                 .game-title {
-                    font-size: 28px !important;
+                    font-size: 30px !important;
                 }
                 .game-instructions {
-                    font-size: 16px !important;
+                    font-size: 18px !important;
                 }
             }
         `;
@@ -500,35 +504,36 @@ function createGameStartOverlay() {
     const heading = document.createElement('h2');
     heading.className = 'game-title';
     heading.textContent = 'Toot Your Own Horn';
+    heading.style.margin = '0 0 20px 0'; // Add bottom margin for spacing
+    heading.style.width = '100%'; // Ensure full width for proper centering
     
-    // Add a logo to the overlay
+    // Add a logo below the title
     const logo = document.createElement('img');
-    logo.src = 'images/logodark.png';
+    logo.src = 'images/logodark.png?v=4'; // Cache-busting query param
     logo.alt = 'Company Logo';
-    logo.style.width = '40px';
+    logo.style.width = '100px'; // Larger logo (was 40px)
     logo.style.height = 'auto';
-    logo.style.marginLeft = '10px';
-    logo.style.verticalAlign = 'middle';
-    logo.style.opacity = '0.9';
+    logo.style.margin = '0 auto 30px auto'; // Center horizontally with margin
+    logo.style.display = 'block'; // Block display for proper centering
+    logo.style.opacity = '1';
     
-    // Create a container for the title and logo
-    const titleContainer = document.createElement('div');
-    titleContainer.style.display = 'flex';
-    titleContainer.style.alignItems = 'center';
-    titleContainer.style.justifyContent = 'center';
-    titleContainer.style.marginBottom = '20px';
-    
-    // Add title and logo to the container
-    titleContainer.appendChild(heading);
-    titleContainer.appendChild(logo);
+    // Also add responsive styling for the logo based on device
+    if (isMobile) {
+        logo.style.width = '80px'; // Slightly smaller on mobile but still larger than original
+    } else {
+        logo.style.width = '100px'; // Keep desktop size
+    }
     
     // Create instructions - using classes for consistent styling
     const instructions = document.createElement('p');
     instructions.className = 'game-instructions';
-    instructions.innerHTML = 'Match fruits with fruits and vegetables with vegetables.<br>Make groups of 3 or more to score points!';
+    instructions.innerHTML = 'Match fruits with fruits and destroy the vegetables.<br><br>Make groups of three or more to score points!';
+    instructions.style.lineHeight = '1.6';
+    instructions.style.padding = '0 20px';
     
-    // Add elements to the overlay
-    gameStartOverlay.appendChild(titleContainer);
+    // Add elements to the overlay in the correct order
+    gameStartOverlay.appendChild(heading);
+    gameStartOverlay.appendChild(logo);
     gameStartOverlay.appendChild(startButton);
     gameStartOverlay.appendChild(instructions);
     
