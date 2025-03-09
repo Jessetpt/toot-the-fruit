@@ -47,6 +47,11 @@
             margin-bottom: 10px;
         }
         
+        .title-with-logo {
+            display: flex;
+            align-items: center;
+        }
+        
         .game-title {
             font-size: 24px;
             font-weight: 700;
@@ -187,13 +192,12 @@
         }
         
         .logo {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 80px;
+            width: 40px;
             height: auto;
-            opacity: 0.8;
+            margin-left: 10px;
+            opacity: 0.9;
             transition: opacity 0.3s ease;
+            vertical-align: middle;
         }
         
         .logo:hover {
@@ -257,7 +261,10 @@
 <body>
     <div class="game-container">
         <div class="game-header">
-            <h1 class="game-title">Toot Your Own Horn</h1>
+            <div class="title-with-logo">
+                <h1 class="game-title">Toot Your Own Horn</h1>
+                <img src="images/logodark.png" alt="Company Logo" class="logo">
+            </div>
             <div id="score">Score: 0</div>
         </div>
         
@@ -273,9 +280,6 @@
             <button id="startButton" style="display: none;">Start Game</button>
             <button id="restartButton" style="display: none;">Restart</button>
         </div>
-        
-        <!-- Company Logo -->
-        <img src="images/logodark.png" alt="Company Logo" class="logo">
     </div>
     
     <div id="gameOverModal" class="modal">

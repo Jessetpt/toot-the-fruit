@@ -501,25 +501,36 @@ function createGameStartOverlay() {
     heading.className = 'game-title';
     heading.textContent = 'Toot Your Own Horn';
     
+    // Add a logo to the overlay
+    const logo = document.createElement('img');
+    logo.src = 'images/logodark.png';
+    logo.alt = 'Company Logo';
+    logo.style.width = '40px';
+    logo.style.height = 'auto';
+    logo.style.marginLeft = '10px';
+    logo.style.verticalAlign = 'middle';
+    logo.style.opacity = '0.9';
+    
+    // Create a container for the title and logo
+    const titleContainer = document.createElement('div');
+    titleContainer.style.display = 'flex';
+    titleContainer.style.alignItems = 'center';
+    titleContainer.style.justifyContent = 'center';
+    titleContainer.style.marginBottom = '20px';
+    
+    // Add title and logo to the container
+    titleContainer.appendChild(heading);
+    titleContainer.appendChild(logo);
+    
     // Create instructions - using classes for consistent styling
     const instructions = document.createElement('p');
     instructions.className = 'game-instructions';
     instructions.innerHTML = 'Match fruits with fruits and vegetables with vegetables.<br>Make groups of 3 or more to score points!';
     
-    // Add a logo to the overlay
-    const logo = document.createElement('img');
-    logo.src = 'images/logodark.png';
-    logo.alt = 'Company Logo';
-    logo.style.width = '80px';
-    logo.style.height = 'auto';
-    logo.style.marginTop = '20px';
-    logo.style.opacity = '0.9';
-    
     // Add elements to the overlay
-    gameStartOverlay.appendChild(heading);
+    gameStartOverlay.appendChild(titleContainer);
     gameStartOverlay.appendChild(startButton);
     gameStartOverlay.appendChild(instructions);
-    gameStartOverlay.appendChild(logo);
     
     // Add click event to start the game
     startButton.addEventListener('click', function(e) {
