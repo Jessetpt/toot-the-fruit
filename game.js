@@ -66,9 +66,16 @@ const tileNames = {
 let touchStartX = null;
 let touchStartY = null;
 
+// Global variables for animation
+let animationRunning = false;
+let lastFrameTime = 0;
+
 // Initialize the game
 window.onload = function() {
     init();
+    
+    // Start animation loop immediately for UI responsiveness (selections, etc.)
+    startAnimationLoop();
 };
 
 // Initialize the game board
@@ -248,8 +255,8 @@ function gameLoop() {
     // Handle falling tiles
     handleFallingTiles();
     
-    // Draw the board
-    drawBoard();
+    // Game logic updates are handled here, but we don't need to call drawBoard()
+    // since the animation loop will handle rendering
     
     // Continue the game loop
     requestAnimationFrame(gameLoop);
@@ -272,22 +279,35 @@ function drawBoard() {
             // Draw tile background - highlight if selected
             if (selectedTile && selectedTile.row === row && selectedTile.col === col) {
                 // Draw a more prominent highlight for the selected tile
-                // First a larger yellow highlight
-                ctx.fillStyle = '#ffff00'; // Yellow highlight
+                // Calculate a pulsating color effect for the background
+                const pulseAmount = (Math.sin(Date.now() / 200) + 1) / 2; // Value between 0 and 1
+                
+                // Create a pulsing background color (yellow to orange)
+                const r = Math.floor(255);
+                const g = Math.floor(255 - pulseAmount * 100); // Pulsing from yellow to more orange
+                const b = Math.floor(pulseAmount * 100);
+                ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                
+                // Fill the background
                 ctx.fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                 
-                // Draw a pulsing inner glow effect
-                const pulseAmount = (Math.sin(Date.now() / 200) + 1) / 2; // Value between 0 and 1
-                const glowSize = 4 + pulseAmount * 3; // Pulsing between 4 and 7 pixels
+                // Calculate glowing border size
+                const glowSize = 3 + pulseAmount * 4; // Pulsing between 3 and 7 pixels
                 
-                // Draw a border for the selected tile
+                // Draw a glowing border for the selected tile
                 ctx.strokeStyle = '#ff0000'; // Red border
                 ctx.lineWidth = 4;
                 ctx.strokeRect(col * TILE_SIZE + glowSize, row * TILE_SIZE + glowSize, 
-                               TILE_SIZE - glowSize * 2, TILE_SIZE - glowSize * 2);
+                              TILE_SIZE - glowSize * 2, TILE_SIZE - glowSize * 2);
+                
+                // Add a secondary inner glow for emphasis
+                ctx.strokeStyle = '#ffff00'; // Yellow inner border
+                ctx.lineWidth = 2;
+                ctx.strokeRect(col * TILE_SIZE + glowSize/2, row * TILE_SIZE + glowSize/2, 
+                              TILE_SIZE - glowSize, TILE_SIZE - glowSize);
                 
                 // Log the selection state to help debugging
-                console.log("Drawing selected tile at:", row, col);
+                console.log("Drawing selected tile at:", row, col, "with pulse:", pulseAmount);
             }
             
             if (tileType !== EMPTY) {
@@ -759,4 +779,27 @@ function submitHighScore(event) {
 // Add a function to manually end the game for testing
 function testEndGame() {
     endGame();
+}
+
+// Start a continuous animation loop separate from the game loop
+function startAnimationLoop() {
+    if (!animationRunning) {
+        animationRunning = true;
+        requestAnimationFrame(animationFrame);
+    }
+}
+
+// Animation frame function for smooth UI elements
+function animationFrame(timestamp) {
+    // Only redraw if needed (when a tile is selected or game is running)
+    if (selectedTile || gameRunning) {
+        // Limit redraw rate for performance (max ~60fps)
+        if (!lastFrameTime || timestamp - lastFrameTime >= 16) {
+            lastFrameTime = timestamp;
+            drawBoard();
+        }
+    }
+    
+    // Continue the animation loop
+    requestAnimationFrame(animationFrame);
 }
