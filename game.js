@@ -345,7 +345,7 @@ function handleTouchStart(event) {
 
 // Handle touch end event
 function handleTouchEnd(event) {
-    if (!gameRunning || fallingTiles || !selectedTile) return;
+    if (!gameRunning || fallingTiles) return;
     
     // Prevent default behavior
     event.preventDefault();
@@ -362,38 +362,73 @@ function handleTouchEnd(event) {
         const touchEndX = (touch.clientX - rect.left) * scaleX;
         const touchEndY = (touch.clientY - rect.top) * scaleY;
         
+        // Calculate the grid position of the touch end
+        const endCol = Math.floor(touchEndX / TILE_SIZE);
+        const endRow = Math.floor(touchEndY / TILE_SIZE);
+        
         // Calculate the direction of the swipe
         const deltaX = touchEndX - touchStartX;
         const deltaY = touchEndY - touchStartY;
         
-        // Get the original selected tile
-        const { row: selectedRow, col: selectedCol } = selectedTile;
-        
-        // Determine which adjacent tile to swap with based on swipe direction
-        let newRow = selectedRow;
-        let newCol = selectedCol;
-        
-        // Require a minimum swipe distance to avoid accidental swipes
+        // Minimum swipe distance to distinguish between a swipe and a tap
         const minSwipeDistance = TILE_SIZE / 4;
+        const isSwipe = Math.abs(deltaX) >= minSwipeDistance || Math.abs(deltaY) >= minSwipeDistance;
         
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            // Horizontal swipe
-            if (Math.abs(deltaX) >= minSwipeDistance) {
-                newCol = selectedCol + (deltaX > 0 ? 1 : -1);
+        if (selectedTile) {
+            const { row: selectedRow, col: selectedCol } = selectedTile;
+            
+            // Handle both swipe and tap-then-tap
+            if (isSwipe) {
+                // This is a swipe - use the existing swipe logic
+                let newRow = selectedRow;
+                let newCol = selectedCol;
+                
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    // Horizontal swipe
+                    newCol = selectedCol + (deltaX > 0 ? 1 : -1);
+                } else {
+                    // Vertical swipe
+                    newRow = selectedRow + (deltaY > 0 ? 1 : -1);
+                }
+                
+                console.log("Swipe attempt:", selectedRow, selectedCol, "to", newRow, newCol);
+                
+                // Check if the new position is valid and perform the swap
+                if (newRow >= 0 && newRow < GRID_SIZE && newCol >= 0 && newCol < GRID_SIZE &&
+                    (newRow !== selectedRow || newCol !== selectedCol)) {
+                    swapTiles(selectedRow, selectedCol, newRow, newCol);
+                }
+            } 
+            else {
+                // This is a tap - check if it's an adjacent tile
+                console.log("Tap attempt from", selectedRow, selectedCol, "to", endRow, endCol);
+                
+                // Check if the tapped position is valid
+                if (endRow >= 0 && endRow < GRID_SIZE && endCol >= 0 && endCol < GRID_SIZE) {
+                    // Check if the tapped tile is adjacent to the selected tile
+                    if ((Math.abs(endRow - selectedRow) === 1 && endCol === selectedCol) ||
+                        (Math.abs(endCol - selectedCol) === 1 && endRow === selectedRow)) {
+                        // Valid adjacent tile - perform the swap
+                        swapTiles(selectedRow, selectedCol, endRow, endCol);
+                    } else {
+                        // Not adjacent - select the new tile instead
+                        selectedTile = { row: endRow, col: endCol };
+                        drawBoard();
+                        
+                        // Exit early without resetting selectedTile
+                        return;
+                    }
+                }
             }
         } else {
-            // Vertical swipe
-            if (Math.abs(deltaY) >= minSwipeDistance) {
-                newRow = selectedRow + (deltaY > 0 ? 1 : -1);
+            // No tile was previously selected, select this one if valid
+            if (endRow >= 0 && endRow < GRID_SIZE && endCol >= 0 && endCol < GRID_SIZE) {
+                selectedTile = { row: endRow, col: endCol };
+                drawBoard();
+                
+                // Exit early without resetting selectedTile
+                return;
             }
-        }
-        
-        console.log("Swap attempt:", selectedRow, selectedCol, "to", newRow, newCol);
-        
-        // Check if the new position is valid and perform the swap
-        if (newRow >= 0 && newRow < GRID_SIZE && newCol >= 0 && newCol < GRID_SIZE &&
-            (newRow !== selectedRow || newCol !== selectedCol)) {
-            swapTiles(selectedRow, selectedCol, newRow, newCol);
         }
         
         // Reset selection
