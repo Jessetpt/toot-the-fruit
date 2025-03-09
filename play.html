@@ -228,7 +228,7 @@
         
         #mobileInstructions {
             display: none;
-            background: rgba(32, 156, 189, 0.7);
+            background: linear-gradient(90deg, rgba(32, 156, 189, 0.7), rgba(32, 156, 189, 0.5));
             color: #FFFFFF;
             padding: 15px;
             border-radius: 10px;
@@ -236,6 +236,8 @@
             max-width: 90%;
             text-align: center;
             font-size: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
         
         .logo {
@@ -252,62 +254,121 @@
         }
         
         @media (max-width: 768px) {
+            body {
+                position: relative;
+                overflow-y: auto;
+                min-height: calc(100vh + 20px);
+                padding-bottom: 20px;
+                background: linear-gradient(to bottom, #000000, #0e0e1a);
+            }
+            
             .game-container {
-                width: 100%;
-                margin: 0;
-                padding: 10px;
+                width: 90%;
+                margin: 15px auto;
+                padding: 15px;
                 border-radius: 15px;
-                max-height: 100vh;
-                height: 100%;
+                max-height: none;
+                height: auto;
                 justify-content: center;
-                border: 1px solid rgba(255, 255, 255, 0.2);
+                background: rgba(32, 156, 189, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            }
+            
+            /* Add simplified border effect on mobile */
+            .game-container {
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .game-container::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px; /* Thinner on mobile */
+                background: linear-gradient(90deg, #209CBD, #F68318);
+                display: block; /* Show on mobile */
+                z-index: 2; /* Ensure visibility */
+            }
+            
+            /* Add bottom border for mobile */
+            .game-container::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 3px; /* Thinner on mobile */
+                background: linear-gradient(90deg, #F68318, #209CBD);
+                display: block; /* Show on mobile */
+                z-index: 2; /* Ensure visibility */
             }
             
             canvas {
                 max-width: 95%;
-                max-height: 60vh;
-                margin: 5px 0;
+                max-height: calc(80vh - 80px);
+                margin: 10px 0;
+                border: 2px solid #209CBD;
             }
             
             #mobileInstructions {
                 display: block;
-                font-size: 12px;
-                padding: 8px;
-                margin: 5px 0;
+                font-size: 14px;
+                padding: 12px;
+                margin: 12px 0;
+                background: linear-gradient(90deg, rgba(32, 156, 189, 0.6), rgba(32, 156, 189, 0.4));
+                border-radius: 8px;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             }
             
             .game-header {
-                margin-bottom: 5px;
+                margin-bottom: 10px;
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0 5px;
+            }
+            
+            .title-with-logo {
+                display: flex;
+                align-items: center;
             }
             
             .game-title {
-                font-size: 18px;
+                font-size: 20px;
+                margin-right: 8px;
             }
             
             #score {
                 font-size: 16px;
-                padding: 5px 10px;
-                background: #209CBD;
+                padding: 8px 15px;
+                background: linear-gradient(90deg, #209CBD, #1a7e9b);
+                box-shadow: 0 3px 10px rgba(32, 156, 189, 0.3);
             }
             
             .controls {
-                margin-top: 5px;
+                margin: 12px 0;
+                gap: 10px;
             }
             
             button {
-                padding: 6px 15px;
+                padding: 8px 20px;
                 font-size: 14px;
-                background: #F68318;
+                background: linear-gradient(90deg, #F68318, #d56c0e);
+                box-shadow: 0 3px 10px rgba(246, 131, 24, 0.3);
             }
             
-            button:hover {
-                background: #209CBD;
+            button:hover, button:active {
+                background: linear-gradient(90deg, #209CBD, #1a7e9b);
             }
             
             .logo {
-                width: 60px;
-                bottom: 10px;
-                right: 10px;
+                width: 40px;
+                height: auto;
+                margin-left: 8px;
             }
             
             /* Hide gradient borders on mobile */
