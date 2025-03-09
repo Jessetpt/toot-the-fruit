@@ -32,11 +32,57 @@
             border-radius: 20px;
             padding: 15px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.2);
             max-width: 650px;
             width: 100%;
             max-height: 98vh;
             position: relative;
+            overflow: hidden;
+        }
+        
+        /* Top gradient bar */
+        .game-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #209CBD, #F68318);
+            z-index: 1;
+        }
+        
+        /* Bottom gradient bar */
+        .game-container::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #F68318, #209CBD);
+            z-index: 1;
+        }
+        
+        /* Left gradient bar */
+        .left-border {
+            position: absolute;
+            top: 5px;
+            left: 0;
+            bottom: 5px;
+            width: 5px;
+            background: linear-gradient(to bottom, #209CBD, #F68318);
+            z-index: 1;
+        }
+        
+        /* Right gradient bar */
+        .right-border {
+            position: absolute;
+            top: 5px;
+            right: 0;
+            bottom: 5px;
+            width: 5px;
+            background: linear-gradient(to bottom, #F68318, #209CBD);
+            z-index: 1;
         }
         
         .game-header {
@@ -79,10 +125,11 @@
             margin: 0;
             color: #FFFFFF;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            background: #209CBD;
-            padding: 8px 15px;
+            background: linear-gradient(90deg, #209CBD, #1a7e9b);
+            padding: 12px 20px;
             border-radius: 50px;
             display: inline-block;
+            box-shadow: 0 5px 15px rgba(32, 156, 189, 0.3);
         }
         
         .controls {
@@ -94,17 +141,17 @@
         }
         
         button {
-            padding: 8px 20px;
+            padding: 12px 20px;
             font-size: 16px;
             font-weight: 600;
-            background: #F68318;
+            background: linear-gradient(90deg, #F68318, #d56c0e);
             color: #FFFFFF;
             border: none;
             border-radius: 50px;
             cursor: pointer;
             transition: all 0.3s ease;
             margin: 0;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 5px 15px rgba(246, 131, 24, 0.3);
             position: relative;
             overflow: hidden;
         }
@@ -123,7 +170,7 @@
         button:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 25px rgba(246, 131, 24, 0.5);
-            background: #209CBD;
+            background: linear-gradient(90deg, #209CBD, #1a7e9b);
         }
         
         button:hover:before {
@@ -192,10 +239,10 @@
         }
         
         .logo {
-            width: 40px;
+            width: 65px;
             height: auto;
             margin-left: 10px;
-            opacity: 0.9;
+            opacity: 1;
             transition: opacity 0.3s ease;
             vertical-align: middle;
         }
@@ -213,6 +260,7 @@
                 max-height: 100vh;
                 height: 100%;
                 justify-content: center;
+                border: 1px solid rgba(255, 255, 255, 0.2);
             }
             
             canvas {
@@ -239,6 +287,7 @@
             #score {
                 font-size: 16px;
                 padding: 5px 10px;
+                background: #209CBD;
             }
             
             .controls {
@@ -248,6 +297,11 @@
             button {
                 padding: 6px 15px;
                 font-size: 14px;
+                background: #F68318;
+            }
+            
+            button:hover {
+                background: #209CBD;
             }
             
             .logo {
@@ -255,11 +309,21 @@
                 bottom: 10px;
                 right: 10px;
             }
+            
+            /* Hide gradient borders on mobile */
+            .game-container::before, .game-container::after, 
+            .left-border, .right-border {
+                display: none;
+            }
         }
     </style>
 </head>
 <body>
     <div class="game-container">
+        <!-- Add left and right borders -->
+        <div class="left-border"></div>
+        <div class="right-border"></div>
+        
         <div class="game-header">
             <div class="title-with-logo">
                 <h1 class="game-title">Toot Your Own Horn</h1>
