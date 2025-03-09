@@ -195,6 +195,8 @@ function initializeBoard() {
 
 // Start the game
 function startGame() {
+    console.log("Starting game...");
+    
     // Reset score
     score = 0;
     document.getElementById('score').textContent = `Score: ${score}`;
@@ -203,12 +205,20 @@ function startGame() {
     document.getElementById('startButton').style.display = 'none';
     document.getElementById('restartButton').style.display = 'inline-block';
     
-    // Make sure the canvas is visible
+    // Make sure the canvas is visible - be extra explicit for mobile
     canvas.style.display = 'block';
+    canvas.style.visibility = 'visible';
+    canvas.style.opacity = '1';
+    
+    console.log("Canvas dimensions:", canvas.width, canvas.height);
+    console.log("Canvas style:", canvas.style.display);
     
     // Initialize the game
     initializeBoard();
     gameRunning = true;
+    
+    // Force a redraw immediately
+    drawBoard();
     
     // Start the game loop
     requestAnimationFrame(gameLoop);
