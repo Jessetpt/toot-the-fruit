@@ -271,14 +271,23 @@ function drawBoard() {
             
             // Draw tile background - highlight if selected
             if (selectedTile && selectedTile.row === row && selectedTile.col === col) {
-                // Draw a highlight for the selected tile
+                // Draw a more prominent highlight for the selected tile
+                // First a larger yellow highlight
                 ctx.fillStyle = '#ffff00'; // Yellow highlight
                 ctx.fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                 
+                // Draw a pulsing inner glow effect
+                const pulseAmount = (Math.sin(Date.now() / 200) + 1) / 2; // Value between 0 and 1
+                const glowSize = 4 + pulseAmount * 3; // Pulsing between 4 and 7 pixels
+                
                 // Draw a border for the selected tile
                 ctx.strokeStyle = '#ff0000'; // Red border
-                ctx.lineWidth = 3;
-                ctx.strokeRect(col * TILE_SIZE + 2, row * TILE_SIZE + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+                ctx.lineWidth = 4;
+                ctx.strokeRect(col * TILE_SIZE + glowSize, row * TILE_SIZE + glowSize, 
+                               TILE_SIZE - glowSize * 2, TILE_SIZE - glowSize * 2);
+                
+                // Log the selection state to help debugging
+                console.log("Drawing selected tile at:", row, col);
             }
             
             if (tileType !== EMPTY) {
@@ -397,6 +406,11 @@ function handleTouchEnd(event) {
                 if (newRow >= 0 && newRow < GRID_SIZE && newCol >= 0 && newCol < GRID_SIZE &&
                     (newRow !== selectedRow || newCol !== selectedCol)) {
                     swapTiles(selectedRow, selectedCol, newRow, newCol);
+                    // Note: swapTiles now handles clearing or maintaining selection
+                } else {
+                    // Invalid swipe target - maintain selection
+                    drawBoard(); // Ensure selection is still visible
+                    return;
                 }
             } 
             else {
@@ -410,14 +424,17 @@ function handleTouchEnd(event) {
                         (Math.abs(endCol - selectedCol) === 1 && endRow === selectedRow)) {
                         // Valid adjacent tile - perform the swap
                         swapTiles(selectedRow, selectedCol, endRow, endCol);
+                        // Note: swapTiles now handles clearing or maintaining selection
                     } else {
                         // Not adjacent - select the new tile instead
                         selectedTile = { row: endRow, col: endCol };
                         drawBoard();
-                        
-                        // Exit early without resetting selectedTile
                         return;
                     }
+                } else {
+                    // Tapped outside the grid - maintain current selection
+                    drawBoard(); // Ensure selection is still visible
+                    return;
                 }
             }
         } else {
@@ -425,14 +442,17 @@ function handleTouchEnd(event) {
             if (endRow >= 0 && endRow < GRID_SIZE && endCol >= 0 && endCol < GRID_SIZE) {
                 selectedTile = { row: endRow, col: endCol };
                 drawBoard();
-                
-                // Exit early without resetting selectedTile
                 return;
             }
         }
         
-        // Reset selection
-        selectedTile = null;
+        // If we reach here and still have a selectedTile, make sure to redraw
+        // to keep it visible
+        if (selectedTile) {
+            drawBoard();
+        }
+        
+        // Only clear touchStart coordinates
         touchStartX = null;
         touchStartY = null;
     }
@@ -446,8 +466,16 @@ function handleClick(event) {
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     
-    const col = Math.floor(x / TILE_SIZE);
-    const row = Math.floor(y / TILE_SIZE);
+    // Apply the same scaling logic we use for mobile to ensure consistency
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const scaledX = x * scaleX;
+    const scaledY = y * scaleY;
+    
+    const col = Math.floor(scaledX / TILE_SIZE);
+    const row = Math.floor(scaledY / TILE_SIZE);
+    
+    console.log("Desktop click at grid position:", row, col);
     
     if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
         if (selectedTile) {
@@ -461,18 +489,24 @@ function handleClick(event) {
                 swapTiles(selectedRow, selectedCol, row, col);
                 selectedTile = null;
             } else {
-                // Select the new tile instead
+                // Select the new tile instead - always select on first click
                 selectedTile = { row, col };
+                // Force a redraw to show the selection
+                drawBoard();
             }
         } else {
             // Select the tile
             selectedTile = { row, col };
+            // Force a redraw to show the selection
+            drawBoard();
         }
     }
 }
 
 // Swap two tiles
 function swapTiles(row1, col1, row2, col2) {
+    console.log("Swapping tiles:", row1, col1, "with", row2, col2);
+    
     // Swap tiles in the board array
     const temp = board[row1][col1];
     board[row1][col1] = board[row2][col2];
@@ -485,11 +519,20 @@ function swapTiles(row1, col1, row2, col2) {
         // Valid move, process matches
         processMatches(matches);
         updateScore(matches.length);
+        
+        // Clear selection after a successful swap
+        selectedTile = null;
     } else {
         // Invalid move, swap back
         const temp = board[row1][col1];
         board[row1][col1] = board[row2][col2];
         board[row2][col2] = temp;
+        
+        // Keep the original tile selected after an invalid swap
+        selectedTile = { row: row1, col: col1 };
+        
+        // Force a redraw to show the selection is maintained
+        drawBoard();
     }
 }
 
