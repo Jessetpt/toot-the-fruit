@@ -29,37 +29,48 @@
             position: relative;
             overflow: hidden;
             color: #FFFFFF; /* White text for dark background */
-            border: 3px solid transparent;
-            background-clip: padding-box;
-            position: relative;
         }
 
-        /* Create gradient border around entire container */
+        /* Top gradient bar */
         .container::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #209CBD, #F68318); /* Blue and orange gradient */
+        }
+        
+        /* Bottom gradient bar */
+        .container::after {
+            content: '';
+            position: absolute;
             bottom: 0;
-            margin: -3px; /* Negative margin to position behind the container */
-            z-index: -1;
-            background: linear-gradient(45deg, #209CBD, #F68318, #209CBD, #F68318); /* Circular gradient pattern */
-            background-size: 300% 300%;
-            border-radius: 23px; /* 20px + 3px border */
-            animation: gradientBorder 8s ease infinite;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #F68318, #209CBD); /* Reversed gradient for bottom */
         }
 
-        @keyframes gradientBorder {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
+        /* Left gradient bar */
+        .left-border {
+            position: absolute;
+            top: 5px; /* Start below top gradient */
+            left: 0;
+            bottom: 5px; /* Stop above bottom gradient */
+            width: 5px;
+            background: linear-gradient(to bottom, #209CBD, #F68318); /* Vertical gradient */
+        }
+        
+        /* Right gradient bar */
+        .right-border {
+            position: absolute;
+            top: 5px; /* Start below top gradient */
+            right: 0;
+            bottom: 5px; /* Stop above bottom gradient */
+            width: 5px;
+            background: linear-gradient(to bottom, #F68318, #209CBD); /* Reversed vertical gradient */
         }
 
         h1 {
@@ -164,7 +175,8 @@
             padding: 10px;
             border-radius: 8px;
             font-weight: bold;
-            background-color: rgba(0, 0, 0, 0.5); /* Dark semi-transparent background */
+            background: linear-gradient(90deg, rgba(32, 156, 189, 0.3), rgba(246, 131, 24, 0.3)); /* Gradient background */
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .success {
@@ -205,12 +217,11 @@
                 padding: 30px 20px;
                 margin: 20px;
                 background: linear-gradient(to right, #000000, #161627); /* Ensure gradient works on mobile */
-                border: 2px solid transparent; /* Slightly thinner border on mobile */
             }
             
-            .container::before {
-                margin: -2px; /* Match the thinner border */
-                border-radius: 22px; /* 20px + 2px border */
+            /* Remove border overrides */
+            .container::before, .container::after {
+                /* Keep the existing styles */
             }
             
             h1 {
@@ -242,6 +253,9 @@
 </head>
 <body>
     <div class="container">
+        <div class="left-border"></div>
+        <div class="right-border"></div>
+        
         <h1>Toot Your Own Horn</h1>
         <!-- Centered Logo below title -->
         <img src="images/logodark.png?v=3" alt="Company Logo" class="centered-logo">
