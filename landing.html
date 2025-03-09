@@ -11,7 +11,7 @@
             margin: 0;
             padding: 0;
             min-height: 100vh;
-            background: #000000; /* Updated to black */
+            background: #FFFFFF; /* Updated to white */
             font-family: 'Arial', sans-serif;
             display: flex;
             justify-content: center;
@@ -19,7 +19,7 @@
         }
 
         .container {
-            background: rgba(255, 255, 255, 0.95);
+            background: #000000; /* Updated to black */
             padding: 40px;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
@@ -28,6 +28,7 @@
             width: 90%;
             position: relative;
             overflow: hidden;
+            color: #FFFFFF; /* White text for dark background */
         }
 
         .container::before {
@@ -37,14 +38,21 @@
             left: 0;
             right: 0;
             height: 5px;
-            background: linear-gradient(90deg, #209CBD, #F68318); /* Updated to blue and orange */
+            background: linear-gradient(90deg, #209CBD, #F68318); /* Blue and orange gradient */
         }
 
         h1 {
-            color: #209CBD; /* Updated to blue */
+            color: #209CBD; /* Blue headings */
             font-size: 2.5em;
-            margin-bottom: 30px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 15px; /* Reduced to make room for logo */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .centered-logo {
+            width: 80px;
+            height: auto;
+            margin: 0 auto 20px auto; /* Center horizontally and add margin below */
+            display: block;
         }
 
         .game-preview {
@@ -58,15 +66,18 @@
             width: 75px;
             height: 75px;
             border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1); /* Lighter shadow for dark background */
             transition: transform 0.3s ease;
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
+            background-color: rgba(255, 255, 255, 0.1); /* Slight highlight for tile backgrounds */
+            border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border */
         }
 
         .preview-tile:hover {
             transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(32, 156, 189, 0.3); /* Blue glow on hover */
         }
 
         .banana {
@@ -88,7 +99,9 @@
         #emailInput {
             width: 100%;
             padding: 15px;
-            border: 2px solid #E0E0E0;
+            border: 2px solid #209CBD; /* Updated to blue border */
+            background-color: rgba(255, 255, 255, 0.9); /* Slightly transparent white */
+            color: #000000; /* Black text */
             border-radius: 10px;
             font-size: 16px;
             margin-bottom: 20px;
@@ -96,25 +109,27 @@
         }
 
         #emailInput:focus {
-            border-color: #209CBD; /* Updated to blue */
+            border-color: #F68318; /* Orange on focus */
             outline: none;
+            box-shadow: 0 0 10px rgba(246, 131, 24, 0.3); /* Subtle orange glow */
         }
 
         button {
-            background: #F68318; /* Updated to orange */
+            background: #F68318; /* Orange button */
             color: white;
             border: none;
             padding: 15px 40px;
             border-radius: 10px;
             font-size: 18px;
             cursor: pointer;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: all 0.3s ease;
+            font-weight: bold;
         }
 
         button:hover {
             transform: translateY(-2px);
-            background: #209CBD; /* Updated to blue */
-            box-shadow: 0 5px 15px rgba(32, 156, 189, 0.4); /* Updated to blue */
+            background: #209CBD; /* Blue on hover */
+            box-shadow: 0 5px 15px rgba(32, 156, 189, 0.4); /* Blue glow */
         }
 
         #status {
@@ -122,6 +137,7 @@
             padding: 10px;
             border-radius: 8px;
             font-weight: bold;
+            background-color: rgba(0, 0, 0, 0.5); /* Dark semi-transparent background */
         }
 
         .success {
@@ -133,7 +149,7 @@
         }
 
         .description {
-            color: #666;
+            color: #CCCCCC; /* Lighter gray for better contrast on dark background */
             margin: 20px 0;
             line-height: 1.6;
         }
@@ -146,6 +162,7 @@
             height: auto;
             opacity: 0.9;
             transition: opacity 0.3s ease;
+            display: none; /* Hide the original logo */
         }
         
         .logo:hover {
@@ -160,22 +177,37 @@
             
             h1 {
                 font-size: 2em;
+                margin-bottom: 10px; /* Less margin on mobile */
             }
             
-            .logo {
-                width: 60px;
-                top: 15px;
-                right: 15px;
+            .centered-logo {
+                width: 60px; /* Smaller logo on mobile */
+                margin-bottom: 15px;
+            }
+            
+            .preview-tile {
+                width: 65px; /* Slightly smaller tiles on mobile */
+                height: 65px;
+            }
+            
+            button {
+                padding: 12px 30px;
+                font-size: 16px;
+            }
+            
+            .description {
+                font-size: 14px;
+                margin: 15px 0;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Company Logo -->
-        <img src="images/logodark.png?v=2" alt="Company Logo" class="logo">
-        
         <h1>Toot Your Own Horn</h1>
+        <!-- Centered Logo below title -->
+        <img src="images/logodark.png?v=3" alt="Company Logo" class="centered-logo">
+        
         <div class="description">
             Match fruits and destroy vegetables in this addictive puzzle game!
             Track your high scores and compete with players worldwide.
