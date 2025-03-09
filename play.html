@@ -117,6 +117,17 @@
             height: auto;
             max-height: calc(98vh - 150px);
             object-fit: contain;
+            background-image: 
+                linear-gradient(45deg, rgba(230, 244, 248, 0.5) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(230, 244, 248, 0.5) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(230, 244, 248, 0.5) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(230, 244, 248, 0.5) 75%),
+                linear-gradient(45deg, rgba(255, 243, 230, 0.3) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255, 243, 230, 0.3) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(255, 243, 230, 0.3) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(255, 243, 230, 0.3) 75%);
+            background-size: 60px 60px, 60px 60px, 60px 60px, 60px 60px, 60px 60px, 60px 60px, 60px 60px, 60px 60px;
+            background-position: 0 0, 0 30px, 30px -30px, -30px 0px, 30px 0px, 30px 30px, 60px 0px, 0px 30px;
         }
         
         #score {
@@ -338,6 +349,8 @@
                 max-height: calc(80vh - 80px);
                 margin: 10px 0;
                 border: 2px solid #209CBD;
+                background-size: 40px 40px, 40px 40px, 40px 40px, 40px 40px, 40px 40px, 40px 40px, 40px 40px, 40px 40px; /* Smaller checkerboard on mobile */
+                background-position: 0 0, 0 20px, 20px -20px, -20px 0px, 20px 0px, 20px 20px, 40px 0px, 0px 20px;
             }
             
             .game-header {
