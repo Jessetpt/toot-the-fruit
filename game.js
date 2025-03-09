@@ -317,11 +317,24 @@ function handleTouchStart(event) {
     
     const touch = event.touches[0];
     const rect = canvas.getBoundingClientRect();
-    touchStartX = touch.clientX - rect.left;
-    touchStartY = touch.clientY - rect.top;
+    
+    // Calculate the scaling factor for the canvas
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    // Apply scaling to get the correct coordinates within the canvas
+    touchStartX = (touch.clientX - rect.left) * scaleX;
+    touchStartY = (touch.clientY - rect.top) * scaleY;
+    
+    console.log("Touch start at:", touchStartX, touchStartY);
+    console.log("Canvas size:", canvas.width, canvas.height);
+    console.log("Display size:", rect.width, rect.height);
+    console.log("Scale factors:", scaleX, scaleY);
     
     const col = Math.floor(touchStartX / TILE_SIZE);
     const row = Math.floor(touchStartY / TILE_SIZE);
+    
+    console.log("Calculated position:", row, col);
     
     if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
         selectedTile = { row, col };
@@ -340,8 +353,14 @@ function handleTouchEnd(event) {
     if (event.changedTouches.length > 0) {
         const touch = event.changedTouches[0];
         const rect = canvas.getBoundingClientRect();
-        const touchEndX = touch.clientX - rect.left;
-        const touchEndY = touch.clientY - rect.top;
+        
+        // Calculate the scaling factor for the canvas
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        
+        // Apply scaling to get the correct coordinates within the canvas
+        const touchEndX = (touch.clientX - rect.left) * scaleX;
+        const touchEndY = (touch.clientY - rect.top) * scaleY;
         
         // Calculate the direction of the swipe
         const deltaX = touchEndX - touchStartX;
@@ -368,6 +387,8 @@ function handleTouchEnd(event) {
                 newRow = selectedRow + (deltaY > 0 ? 1 : -1);
             }
         }
+        
+        console.log("Swap attempt:", selectedRow, selectedCol, "to", newRow, newCol);
         
         // Check if the new position is valid and perform the swap
         if (newRow >= 0 && newRow < GRID_SIZE && newCol >= 0 && newCol < GRID_SIZE &&
