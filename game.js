@@ -15,6 +15,7 @@ let score = 0;
 let gameRunning = false;
 let fallingTiles = false;
 let selectedTile = null;
+let isMobileDevice = false; // Flag to detect mobile device
 
 // Image objects for sprites
 let images = {};
@@ -61,17 +62,37 @@ const tileNames = {
     [VEG_3]: 'Radish',
 };
 
+// Variables for touch events
+let touchStartX = null;
+let touchStartY = null;
+
 // Initialize the game
 window.onload = function() {
     canvas = document.getElementById('gameCanvas');
     ctx = canvas.getContext('2d');
     
-    // Set canvas dimensions
-    canvas.width = BOARD_WIDTH;
-    canvas.height = BOARD_HEIGHT;
+    // Check if the device is mobile
+    isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // Set canvas size based on device
+    if (isMobileDevice) {
+        // Keep the grid size but adjust tile size for mobile
+        const screenWidth = Math.min(window.innerWidth, 500); // Limit max width
+        TILE_SIZE = Math.floor(screenWidth / GRID_SIZE);
+        canvas.width = TILE_SIZE * GRID_SIZE;
+        canvas.height = TILE_SIZE * GRID_SIZE;
+    } else {
+        canvas.width = BOARD_WIDTH;
+        canvas.height = BOARD_HEIGHT;
+    }
     
     // Add event listeners
     canvas.addEventListener('click', handleClick);
+    
+    // Add touch event listeners for mobile
+    canvas.addEventListener('touchstart', handleTouchStart, false);
+    canvas.addEventListener('touchend', handleTouchEnd, false);
+    
     document.getElementById('startButton').addEventListener('click', startGame);
     document.getElementById('restartButton').addEventListener('click', startGame);
     document.getElementById('playAgainButton').addEventListener('click', closeModal);
@@ -222,12 +243,24 @@ function drawBoard() {
     
     // Draw background grid
     ctx.fillStyle = '#add8e6'; // Light blue background
-    ctx.fillRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // Draw each tile
     for (let row = 0; row < GRID_SIZE; row++) {
         for (let col = 0; col < GRID_SIZE; col++) {
             const tileType = board[row][col];
+            
+            // Draw tile background - highlight if selected
+            if (selectedTile && selectedTile.row === row && selectedTile.col === col) {
+                // Draw a highlight for the selected tile
+                ctx.fillStyle = '#ffff00'; // Yellow highlight
+                ctx.fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                
+                // Draw a border for the selected tile
+                ctx.strokeStyle = '#ff0000'; // Red border
+                ctx.lineWidth = 3;
+                ctx.strokeRect(col * TILE_SIZE + 2, row * TILE_SIZE + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+            }
             
             if (tileType !== EMPTY) {
                 try {
@@ -248,27 +281,92 @@ function drawBoard() {
                         ctx.textBaseline = 'middle';
                         ctx.fillText(tileNames[tileType].charAt(0), col * TILE_SIZE + TILE_SIZE/2, row * TILE_SIZE + TILE_SIZE/2);
                     }
-                    
-                    // Draw border
-                    ctx.strokeStyle = '#000000';
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                 } catch (e) {
-                    console.error(`Error drawing tile at ${row},${col}:`, e);
-                    // Draw error indicator
-                    ctx.fillStyle = '#FF0000';
-                    ctx.fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                    console.error('Error drawing tile at', row, col, ':', e);
                 }
             }
         }
     }
     
-    // Highlight selected tile if any
-    if (selectedTile) {
-        const { row, col } = selectedTile;
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+    // Draw the score
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 20px Arial';
+    ctx.textAlign = 'start';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`Score: ${score}`, 10, 10);
+}
+
+// Handle touch start event
+function handleTouchStart(event) {
+    if (!gameRunning || fallingTiles) return;
+    
+    // Prevent default behavior (scrolling, zooming)
+    event.preventDefault();
+    
+    const touch = event.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    touchStartX = touch.clientX - rect.left;
+    touchStartY = touch.clientY - rect.top;
+    
+    const col = Math.floor(touchStartX / TILE_SIZE);
+    const row = Math.floor(touchStartY / TILE_SIZE);
+    
+    if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
+        selectedTile = { row, col };
+        // Draw a highlight around the selected tile
+        drawBoard();
+    }
+}
+
+// Handle touch end event
+function handleTouchEnd(event) {
+    if (!gameRunning || fallingTiles || !selectedTile) return;
+    
+    // Prevent default behavior
+    event.preventDefault();
+    
+    if (event.changedTouches.length > 0) {
+        const touch = event.changedTouches[0];
+        const rect = canvas.getBoundingClientRect();
+        const touchEndX = touch.clientX - rect.left;
+        const touchEndY = touch.clientY - rect.top;
+        
+        // Calculate the direction of the swipe
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+        
+        // Get the original selected tile
+        const { row: selectedRow, col: selectedCol } = selectedTile;
+        
+        // Determine which adjacent tile to swap with based on swipe direction
+        let newRow = selectedRow;
+        let newCol = selectedCol;
+        
+        // Require a minimum swipe distance to avoid accidental swipes
+        const minSwipeDistance = TILE_SIZE / 4;
+        
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            // Horizontal swipe
+            if (Math.abs(deltaX) >= minSwipeDistance) {
+                newCol = selectedCol + (deltaX > 0 ? 1 : -1);
+            }
+        } else {
+            // Vertical swipe
+            if (Math.abs(deltaY) >= minSwipeDistance) {
+                newRow = selectedRow + (deltaY > 0 ? 1 : -1);
+            }
+        }
+        
+        // Check if the new position is valid and perform the swap
+        if (newRow >= 0 && newRow < GRID_SIZE && newCol >= 0 && newCol < GRID_SIZE &&
+            (newRow !== selectedRow || newCol !== selectedCol)) {
+            swapTiles(selectedRow, selectedCol, newRow, newCol);
+        }
+        
+        // Reset selection
+        selectedTile = null;
+        touchStartX = null;
+        touchStartY = null;
     }
 }
 
