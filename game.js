@@ -32,6 +32,41 @@ let audioContext;
 let soundEnabled = true;
 let audioCache = {};
 let audioInitialized = false;
+let audioUnlocked = false;
+
+// Initialize sound on first user interaction to work around mobile browser restrictions
+document.addEventListener('touchstart', unlockAudio, { once: true });
+document.addEventListener('click', unlockAudio, { once: true });
+
+function unlockAudio() {
+    if (audioUnlocked) return;
+    audioUnlocked = true;
+    
+    console.log("Unlocking audio...");
+    
+    // Create and play a silent sound to unlock audio
+    const silentSound = new Audio();
+    silentSound.src = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjMyLjEwNAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV6urq6urq6urq6urq6urq6urq6urq6urq6v////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAASDs90hvAAAAAAAAAAAAAAAAAAAA//sQZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV";
+    
+    const promise = silentSound.play();
+    if (promise !== undefined) {
+        promise.catch(error => {
+            console.log("Initial audio unlock failed:", error);
+        });
+    }
+    
+    // Use the Web Audio API for more reliable sound on mobile
+    try {
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioContext();
+        console.log("Audio context created");
+    } catch (e) {
+        console.error("Web Audio API not supported:", e);
+    }
+    
+    // Preload all sound files after unlock
+    preloadAudio();
+}
 
 // Game variables
 let canvas, ctx;
@@ -106,11 +141,28 @@ window.onload = function() {
     // Create the start game overlay immediately
     createGameStartOverlay();
     
+    // Try to initialize audio right away (helps with Safari)
+    setTimeout(unlockAudio, 200);
+    
     // Start animation loop immediately for UI responsiveness (selections, etc.)
     startAnimationLoop();
     
     // Initialize audio system
     initAudio();
+    
+    // Add clear event listeners for mobile touch handling
+    const gameCanvas = document.getElementById('gameCanvas');
+    gameCanvas.addEventListener('touchstart', function(e) {
+        console.log("Touch start on canvas detected");
+        // Try to unlock audio
+        unlockAudio();
+        handleTouchStart(e);
+    }, false);
+    
+    gameCanvas.addEventListener('touchend', function(e) {
+        console.log("Touch end on canvas detected");
+        handleTouchEnd(e);
+    }, false);
 };
 
 // Initialize the game board
@@ -681,12 +733,7 @@ function startGameFromOverlay() {
 
 // Handle touch start event
 function handleTouchStart(event) {
-    if (!gameRunning) {
-        // Game hasn't started, but no need to show popup now
-        // as we have the overlay
-        return;
-    }
-    
+    if (!gameRunning) return;
     if (fallingTiles) return;
     
     // Prevent default behavior (scrolling, zooming)
@@ -708,6 +755,7 @@ function handleTouchStart(event) {
     
     if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
         // Play the select sound immediately when a tile is tapped
+        console.log("Touch - playing select sound");
         playSound(SOUND_SELECT, 0.5);
         
         selectedTile = { row, col };
@@ -718,33 +766,61 @@ function handleTouchStart(event) {
 
 // Handle touch end event
 function handleTouchEnd(event) {
-    if (!gameRunning) {
-        return;
-    }
-    
+    if (!gameRunning) return;
     if (fallingTiles) return;
     
-    // Prevent default behavior
     event.preventDefault();
     
-    if (event.changedTouches.length > 0) {
-        const touch = event.changedTouches[0];
-        const rect = canvas.getBoundingClientRect();
+    // Get the position where the touch ended
+    const touch = event.changedTouches[0];
+    const rect = canvas.getBoundingClientRect();
+    
+    // Calculate the scaling factor for the canvas
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    // Apply scaling to get the correct coordinates
+    const touchEndX = (touch.clientX - rect.left) * scaleX;
+    const touchEndY = (touch.clientY - rect.top) * scaleY;
+    
+    // Get end grid position
+    const endCol = Math.floor(touchEndX / TILE_SIZE);
+    const endRow = Math.floor(touchEndY / TILE_SIZE);
+    
+    console.log("Touch end:", endRow, endCol);
+    
+    if (selectedTile) {
+        // Check if this is a new tap (not part of a swipe)
+        const dx = Math.abs(touchEndX - touchStartX);
+        const dy = Math.abs(touchEndY - touchStartY);
+        const touchDistance = Math.sqrt(dx*dx + dy*dy);
         
-        // Calculate the scaling factor for the canvas
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
+        // If minimal movement, it's likely a tap on a new tile
+        if (touchDistance < 20) {
+            console.log("Detected tap-tap gesture");
+            
+            // Check if tap on a different valid tile
+            if (endRow >= 0 && endRow < GRID_SIZE && endCol >= 0 && endCol < GRID_SIZE) {
+                // Check if this is adjacent to the selected tile
+                const rowDiff = Math.abs(selectedTile.row - endRow);
+                const colDiff = Math.abs(selectedTile.col - endCol);
+                
+                if ((rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1)) {
+                    // It's an adjacent tile, swap them
+                    console.log("Swapping tiles (tap-tap method)");
+                    playSound(SOUND_SWAP);
+                    swapTiles(selectedTile.row, selectedTile.col, endRow, endCol);
+                } else {
+                    // Not adjacent, select the new tile instead
+                    selectedTile = { row: endRow, col: endCol };
+                    playSound(SOUND_SELECT, 0.5);
+                    drawBoard();
+                }
+            }
+            return;
+        }
         
-        // Apply scaling to get the correct coordinates within the canvas
-        const touchEndX = (touch.clientX - rect.left) * scaleX;
-        const touchEndY = (touch.clientY - rect.top) * scaleY;
-        
-        // Calculate the grid position of the touch end
-        const endCol = Math.floor(touchEndX / TILE_SIZE);
-        const endRow = Math.floor(touchEndY / TILE_SIZE);
-        
-        console.log("Touch end at position:", endRow, endCol);
-        
+        // Continue with existing swipe logic
         // Calculate the direction of the swipe
         const deltaX = touchEndX - touchStartX;
         const deltaY = touchEndY - touchStartY;
@@ -755,91 +831,49 @@ function handleTouchEnd(event) {
         
         console.log("Is swipe:", isSwipe, "Delta:", deltaX, deltaY);
         
-        if (selectedTile) {
-            const { row: selectedRow, col: selectedCol } = selectedTile;
+        if (isSwipe) {
+            // This is a swipe - determine which adjacent tile to swap with
+            let newRow = selectedTile.row;
+            let newCol = selectedTile.col;
             
-            console.log("Selected tile:", selectedRow, selectedCol);
-            
-            // Handle both swipe and tap-then-tap
-            if (isSwipe) {
-                // This is a swipe - use the existing swipe logic
-                let newRow = selectedRow;
-                let newCol = selectedCol;
-                
-                if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                    // Horizontal swipe
-                    newCol = selectedCol + (deltaX > 0 ? 1 : -1);
-                } else {
-                    // Vertical swipe
-                    newRow = selectedRow + (deltaY > 0 ? 1 : -1);
-                }
-                
-                console.log("Swipe attempt from", selectedRow, selectedCol, "to", newRow, newCol);
-                
-                // Check if the new position is valid and perform the swap
-                if (newRow >= 0 && newRow < GRID_SIZE && newCol >= 0 && newCol < GRID_SIZE &&
-                    (newRow !== selectedRow || newCol !== selectedCol)) {
-                    swapTiles(selectedRow, selectedCol, newRow, newCol);
-                    // Note: swapTiles now handles clearing or maintaining selection
-                } else {
-                    // Invalid swipe target - maintain selection
-                    drawBoard(); // Ensure selection is still visible
-                }
-            } 
-            else {
-                // This is a tap - check if it's an adjacent tile
-                console.log("Tap-then-tap attempt from", selectedRow, selectedCol, "to", endRow, endCol);
-                
-                // Check if the tapped position is valid
-                if (endRow >= 0 && endRow < GRID_SIZE && endCol >= 0 && endCol < GRID_SIZE) {
-                    // Check if the tapped tile is adjacent to the selected tile
-                    const isHorizontalAdjacent = Math.abs(endCol - selectedCol) === 1 && endRow === selectedRow;
-                    const isVerticalAdjacent = Math.abs(endRow - selectedRow) === 1 && endCol === selectedCol;
-                    
-                    console.log("Adjacency check:", 
-                               "Horizontal:", isHorizontalAdjacent, 
-                               "Vertical:", isVerticalAdjacent);
-                               
-                    if (isHorizontalAdjacent || isVerticalAdjacent) {
-                        // Valid adjacent tile - perform the swap
-                        console.log("Valid tap-then-tap - swapping tiles");
-                        swapTiles(selectedRow, selectedCol, endRow, endCol);
-                        // Note: swapTiles now handles the selection state
-                    } else if (endRow === selectedRow && endCol === selectedCol) {
-                        // Tapped the same tile - keep it selected
-                        console.log("Tapped same tile - keeping selected");
-                        drawBoard();
-                    } else {
-                        // Not adjacent - select the new tile instead
-                        console.log("Not adjacent - selecting new tile");
-                        selectedTile = { row: endRow, col: endCol };
-                        drawBoard();
-                    }
-                } else {
-                    // Tapped outside the grid - maintain current selection
-                    console.log("Tapped outside grid - maintaining selection");
-                    drawBoard(); // Ensure selection is still visible
-                }
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                // Horizontal swipe
+                newCol = selectedTile.col + (deltaX > 0 ? 1 : -1);
+            } else {
+                // Vertical swipe
+                newRow = selectedTile.row + (deltaY > 0 ? 1 : -1);
             }
-        } else {
-            // No tile was previously selected, select this one if valid
-            if (endRow >= 0 && endRow < GRID_SIZE && endCol >= 0 && endCol < GRID_SIZE) {
-                console.log("No previous selection - selecting new tile");
-                selectedTile = { row: endRow, col: endCol };
-                drawBoard();
+            
+            console.log("Swipe attempt from", selectedTile.row, selectedTile.col, "to", newRow, newCol);
+            
+            // Check if the new position is valid and perform the swap
+            if (newRow >= 0 && newRow < GRID_SIZE && newCol >= 0 && newCol < GRID_SIZE) {
+                console.log("Swapping tiles via swipe");
+                playSound(SOUND_SWAP);
+                swapTiles(selectedTile.row, selectedTile.col, newRow, newCol);
+            } else {
+                // Invalid swipe target - maintain selection
+                drawBoard(); // Ensure selection is still visible
             }
         }
-        
-        // If we reach here and still have a selectedTile, make sure to redraw
-        // to keep it visible
-        if (selectedTile) {
+    } else {
+        // No tile was previously selected, select this one if valid
+        if (endRow >= 0 && endRow < GRID_SIZE && endCol >= 0 && endCol < GRID_SIZE) {
+            console.log("No previous selection - selecting new tile");
+            selectedTile = { row: endRow, col: endCol };
             drawBoard();
         }
-        
-        // Only clear touchStart coordinates but maintain selectedTile for tap-then-tap
-        touchStartX = null;
-        touchStartY = null;
     }
+    
+    // If we reach here and still have a selectedTile, make sure to redraw
+    // to keep it visible
+    if (selectedTile) {
+        drawBoard();
+    }
+    
+    // Reset touch tracking
+    touchStartX = null;
+    touchStartY = null;
 }
 
 // Handle mouse clicks on the game board
@@ -1263,38 +1297,33 @@ function preloadAudio() {
 
 // Play a sound effect
 function playSound(soundPath, volume = 1.0) {
-    if (!soundEnabled || !audioInitialized) return;
+    if (!soundEnabled) return;
+    
+    console.log("Playing sound:", soundPath);
     
     try {
-        // For mobile responsiveness, create a new Audio instance each time
-        // This helps with the click sound issue and reduces delay
-        const audio = new Audio(soundPath);
-        audio.volume = volume;
+        // Create new Audio instance each time to avoid issues on mobile
+        const sound = new Audio(soundPath);
+        sound.volume = volume;
         
-        // Modern browsers require user interaction before playing audio
-        // This pattern works better on mobile devices
-        audio.muted = false;
+        // Force load the audio
+        sound.load();
         
-        // Play the sound with minimal latency
-        const playPromise = audio.play();
+        // Play immediately with no delay
+        const playPromise = sound.play();
         
-        // Handle play promise (required for modern browsers)
         if (playPromise !== undefined) {
             playPromise.catch(error => {
-                console.error('Audio playback error:', error);
-                // Create a "silent" play to unlock audio
-                if (error.name === 'NotAllowedError') {
-                    // Try to unlock audio on next user interaction
-                    document.addEventListener('touchstart', function unlockAudio() {
-                        document.removeEventListener('touchstart', unlockAudio);
-                        const silent = new Audio();
-                        silent.play().catch(() => {});
-                    }, {once: true});
+                console.error("Audio play error:", error);
+                
+                // If sound failed, try to unlock audio system again
+                if (error.name === "NotAllowedError") {
+                    unlockAudio();
                 }
             });
         }
     } catch (error) {
-        console.error('Error playing sound:', error);
+        console.error("Error playing sound:", error);
     }
 }
 
