@@ -24,49 +24,10 @@ const SOUND_FALL = 'sounds/fall.wav';
 const SOUND_GAME_OVER = 'sounds/game over.wav';
 
 // Audio settings
-const AUDIO_ENABLED = true;
-const AUDIO_CACHE = {}; // Cache for preloaded audio
-let audioContext;
-
-// Audio control variables
 let soundEnabled = true;
-let audioCache = {};
+let audioContext = null;
+let audioBuffers = {};
 let audioInitialized = false;
-let audioUnlocked = false;
-
-// Initialize sound on first user interaction to work around mobile browser restrictions
-document.addEventListener('touchstart', unlockAudio, { once: true });
-document.addEventListener('click', unlockAudio, { once: true });
-
-function unlockAudio() {
-    if (audioUnlocked) return;
-    audioUnlocked = true;
-    
-    console.log("Unlocking audio...");
-    
-    // Create and play a silent sound to unlock audio
-    const silentSound = new Audio();
-    silentSound.src = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjMyLjEwNAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV6urq6urq6urq6urq6urq6urq6urq6urq6v////////////////////////////////8AAAAATGF2YzU4LjU0AAAAAAAAAAAAAAAAJAAAAAAAAAAAASDs90hvAAAAAAAAAAAAAAAAAAAA//sQZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV";
-    
-    const promise = silentSound.play();
-    if (promise !== undefined) {
-        promise.catch(error => {
-            console.log("Initial audio unlock failed:", error);
-        });
-    }
-    
-    // Use the Web Audio API for more reliable sound on mobile
-    try {
-        window.AudioContext = window.AudioContext || window.webkitAudioContext;
-        audioContext = new AudioContext();
-        console.log("Audio context created");
-    } catch (e) {
-        console.error("Web Audio API not supported:", e);
-    }
-    
-    // Preload all sound files after unlock
-    preloadAudio();
-}
 
 // Game variables
 let canvas, ctx;
@@ -141,28 +102,20 @@ window.onload = function() {
     // Create the start game overlay immediately
     createGameStartOverlay();
     
-    // Try to initialize audio right away (helps with Safari)
-    setTimeout(unlockAudio, 200);
-    
-    // Start animation loop immediately for UI responsiveness (selections, etc.)
+    // Start animation loop immediately for UI responsiveness
     startAnimationLoop();
     
-    // Initialize audio system
+    // Initialize audio system (mute button)
     initAudio();
     
-    // Add clear event listeners for mobile touch handling
-    const gameCanvas = document.getElementById('gameCanvas');
-    gameCanvas.addEventListener('touchstart', function(e) {
-        console.log("Touch start on canvas detected");
-        // Try to unlock audio
-        unlockAudio();
-        handleTouchStart(e);
-    }, false);
+    // Setup event listeners for user touch
+    document.addEventListener('touchstart', function() {
+        initAudioOnTouch();
+    }, {once: true});
     
-    gameCanvas.addEventListener('touchend', function(e) {
-        console.log("Touch end on canvas detected");
-        handleTouchEnd(e);
-    }, false);
+    document.addEventListener('click', function() {
+        initAudioOnTouch();
+    }, {once: true});
 };
 
 // Initialize the game board
@@ -739,6 +692,11 @@ function handleTouchStart(event) {
     // Prevent default behavior (scrolling, zooming)
     event.preventDefault();
     
+    // Initialize audio on first interaction
+    if (!audioInitialized) {
+        initAudioOnTouch();
+    }
+    
     const touch = event.touches[0];
     const rect = canvas.getBoundingClientRect();
     
@@ -754,9 +712,9 @@ function handleTouchStart(event) {
     const row = Math.floor(touchStartY / TILE_SIZE);
     
     if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
-        // Play the select sound immediately when a tile is tapped
-        console.log("Touch - playing select sound");
+        // Play the select sound FIRST - before any processing
         playSound(SOUND_SELECT, 0.5);
+        console.log("Touch sound triggered");
         
         selectedTile = { row, col };
         // Draw a highlight around the selected tile
@@ -789,86 +747,35 @@ function handleTouchEnd(event) {
     
     console.log("Touch end:", endRow, endCol);
     
+    // Check if there's a selected tile
     if (selectedTile) {
-        // Check if this is a new tap (not part of a swipe)
-        const dx = Math.abs(touchEndX - touchStartX);
-        const dy = Math.abs(touchEndY - touchStartY);
-        const touchDistance = Math.sqrt(dx*dx + dy*dy);
-        
-        // If minimal movement, it's likely a tap on a new tile
-        if (touchDistance < 20) {
-            console.log("Detected tap-tap gesture");
-            
-            // Check if tap on a different valid tile
-            if (endRow >= 0 && endRow < GRID_SIZE && endCol >= 0 && endCol < GRID_SIZE) {
-                // Check if this is adjacent to the selected tile
+        // Check if this is a valid tile
+        if (endRow >= 0 && endRow < GRID_SIZE && endCol >= 0 && endCol < GRID_SIZE) {
+            // Check if it's a different tile from the selected one
+            if (endRow !== selectedTile.row || endCol !== selectedTile.col) {
+                // Check if it's adjacent
                 const rowDiff = Math.abs(selectedTile.row - endRow);
                 const colDiff = Math.abs(selectedTile.col - endCol);
                 
                 if ((rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1)) {
-                    // It's an adjacent tile, swap them
-                    console.log("Swapping tiles (tap-tap method)");
-                    playSound(SOUND_SWAP);
+                    // Adjacent - swap them
+                    console.log("Swapping tiles from touch");
+                    playSound(SOUND_SWAP, 0.8);
                     swapTiles(selectedTile.row, selectedTile.col, endRow, endCol);
                 } else {
-                    // Not adjacent, select the new tile instead
+                    // Not adjacent - select the new tile
+                    console.log("Not adjacent - selecting new tile");
                     selectedTile = { row: endRow, col: endCol };
                     playSound(SOUND_SELECT, 0.5);
                     drawBoard();
                 }
-            }
-            return;
-        }
-        
-        // Continue with existing swipe logic
-        // Calculate the direction of the swipe
-        const deltaX = touchEndX - touchStartX;
-        const deltaY = touchEndY - touchStartY;
-        
-        // Minimum swipe distance to distinguish between a swipe and a tap
-        const minSwipeDistance = TILE_SIZE / 4;
-        const isSwipe = Math.abs(deltaX) >= minSwipeDistance || Math.abs(deltaY) >= minSwipeDistance;
-        
-        console.log("Is swipe:", isSwipe, "Delta:", deltaX, deltaY);
-        
-        if (isSwipe) {
-            // This is a swipe - determine which adjacent tile to swap with
-            let newRow = selectedTile.row;
-            let newCol = selectedTile.col;
-            
-            if (Math.abs(deltaX) > Math.abs(deltaY)) {
-                // Horizontal swipe
-                newCol = selectedTile.col + (deltaX > 0 ? 1 : -1);
             } else {
-                // Vertical swipe
-                newRow = selectedTile.row + (deltaY > 0 ? 1 : -1);
-            }
-            
-            console.log("Swipe attempt from", selectedTile.row, selectedTile.col, "to", newRow, newCol);
-            
-            // Check if the new position is valid and perform the swap
-            if (newRow >= 0 && newRow < GRID_SIZE && newCol >= 0 && newCol < GRID_SIZE) {
-                console.log("Swapping tiles via swipe");
-                playSound(SOUND_SWAP);
-                swapTiles(selectedTile.row, selectedTile.col, newRow, newCol);
-            } else {
-                // Invalid swipe target - maintain selection
-                drawBoard(); // Ensure selection is still visible
+                // Tapped the same tile - deselect it
+                console.log("Deselecting tile");
+                selectedTile = null;
+                drawBoard();
             }
         }
-    } else {
-        // No tile was previously selected, select this one if valid
-        if (endRow >= 0 && endRow < GRID_SIZE && endCol >= 0 && endCol < GRID_SIZE) {
-            console.log("No previous selection - selecting new tile");
-            selectedTile = { row: endRow, col: endCol };
-            drawBoard();
-        }
-    }
-    
-    // If we reach here and still have a selectedTile, make sure to redraw
-    // to keep it visible
-    if (selectedTile) {
-        drawBoard();
     }
     
     // Reset touch tracking
@@ -881,50 +788,46 @@ function handleClick(event) {
     // Exit if the game is not running
     if (!gameRunning) return;
     
+    // Initialize audio on first interaction
+    if (!audioInitialized) {
+        initAudioOnTouch();
+    }
+    
     // Get click coordinates relative to the canvas
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     
-    console.log("Click detected at:", x, y);
-    
     // Convert to grid coordinates
     const col = Math.floor(x / TILE_SIZE);
     const row = Math.floor(y / TILE_SIZE);
     
-    console.log("Click grid position:", row, col);
-    
-    // Check if the click is within the grid bounds
     if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
-        // Play sound immediately for better responsiveness
+        // Play sound FIRST before any processing
         playSound(SOUND_SELECT, 0.5);
+        console.log("Click sound triggered");
         
         // If no tile is selected, select this one
         if (!selectedTile) {
             selectedTile = { row, col };
-            console.log("Selected tile:", selectedTile);
             drawBoard();
         } else {
             // If this is the same tile, deselect it
             if (selectedTile.row === row && selectedTile.col === col) {
                 selectedTile = null;
-                console.log("Deselected tile");
                 drawBoard();
             } else {
                 // Check if this is adjacent to the selected tile
                 const rowDiff = Math.abs(selectedTile.row - row);
                 const colDiff = Math.abs(selectedTile.col - col);
                 
-                console.log("Attempting swap, differences:", rowDiff, colDiff);
-                
                 if ((rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1)) {
-                    // Swap the tiles
-                    console.log("Swapping tiles");
+                    // Swap the tiles - play sound BEFORE swap
+                    playSound(SOUND_SWAP, 0.8);
                     swapTiles(selectedTile.row, selectedTile.col, row, col);
                 } else {
-                    // Not adjacent, select the new tile instead
+                    // Not adjacent - select the new tile instead
                     selectedTile = { row, col };
-                    playSound(SOUND_SELECT, 0.5); // Play new selection sound
                     drawBoard();
                 }
             }
@@ -941,8 +844,8 @@ function swapTiles(row1, col1, row2, col2) {
     board[row1][col1] = board[row2][col2];
     board[row2][col2] = temp;
     
-    // Play swap sound
-    playSound(SOUND_SWAP, 0.7);
+    // Note: Sound is now played BEFORE this function is called, 
+    // so we don't need to play it again here
     
     // Check if the swap created any matches
     const matches = findMatches();
@@ -1237,7 +1140,94 @@ function animationFrame(timestamp) {
     requestAnimationFrame(animationFrame);
 }
 
-// Initialize the audio system
+// Initialize audio with a single user interaction
+function initAudioOnTouch() {
+    if (audioInitialized) return;
+    
+    try {
+        // Create audio context
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioContext = new AudioContext();
+        
+        // Load all sounds at once
+        loadSound(SOUND_SELECT);
+        loadSound(SOUND_SWAP);
+        loadSound(SOUND_MATCH);
+        loadSound(SOUND_INVALID);
+        loadSound(SOUND_FALL);
+        loadSound(SOUND_GAME_OVER);
+        
+        audioInitialized = true;
+        console.log("Audio initialized");
+    } catch (e) {
+        console.error("Could not initialize audio:", e);
+    }
+}
+
+// Load a sound file into buffer
+function loadSound(url) {
+    fetch(url)
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then(audioBuffer => {
+            audioBuffers[url] = audioBuffer;
+            console.log(`Loaded sound: ${url}`);
+        })
+        .catch(error => console.error(`Error loading sound ${url}:`, error));
+}
+
+// Play a sound with minimal latency
+function playSound(url, volume = 1.0) {
+    if (!soundEnabled) return;
+    
+    if (!audioInitialized) {
+        initAudioOnTouch();
+        // For the first interaction, just make a click noise
+        const clickSound = new Audio();
+        clickSound.volume = volume;
+        clickSound.play().catch(() => {});
+        return;
+    }
+    
+    try {
+        if (audioContext && audioBuffers[url]) {
+            // Create source node
+            const source = audioContext.createBufferSource();
+            source.buffer = audioBuffers[url];
+            
+            // Create gain node for volume
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = volume;
+            
+            // Connect nodes: source -> gain -> destination
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Play immediately with zero delay
+            source.start(0);
+        } else {
+            // Fallback to Audio API if Web Audio not ready
+            const sound = new Audio(url);
+            sound.volume = volume;
+            sound.play().catch(() => {});
+        }
+    } catch (e) {
+        console.error("Error playing sound:", e);
+    }
+}
+
+// Toggle sound on/off
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    
+    // Update mute button appearance
+    const muteButton = document.getElementById('muteButton');
+    if (muteButton) {
+        muteButton.innerHTML = soundEnabled ? '🔊' : '🔇';
+    }
+}
+
+// Initialize the audio system - just the mute button
 function initAudio() {
     // Create a mute button in the top-right corner
     const muteButton = document.createElement('button');
@@ -1256,91 +1246,4 @@ function initAudio() {
     
     muteButton.addEventListener('click', toggleSound);
     document.body.appendChild(muteButton);
-    
-    // Preload audio files
-    preloadAudio();
-    
-    // Mark as initialized
-    audioInitialized = true;
-}
-
-// Preload all audio files
-function preloadAudio() {
-    const soundPaths = [
-        SOUND_SELECT,
-        SOUND_SWAP,
-        SOUND_MATCH,
-        SOUND_INVALID,
-        SOUND_FALL,
-        SOUND_GAME_OVER
-    ];
-    
-    // Create audio objects for each sound
-    soundPaths.forEach(path => {
-        try {
-            const audio = new Audio();
-            audio.src = path;
-            audio.preload = 'auto';
-            
-            // Add to cache
-            audioCache[path] = audio;
-            
-            // Optional: load without playing
-            audio.load();
-            
-            console.log(`Preloaded audio: ${path}`);
-        } catch (error) {
-            console.error(`Failed to preload audio: ${path}`, error);
-        }
-    });
-}
-
-// Play a sound effect
-function playSound(soundPath, volume = 1.0) {
-    if (!soundEnabled) return;
-    
-    console.log("Playing sound:", soundPath);
-    
-    try {
-        // Create new Audio instance each time to avoid issues on mobile
-        const sound = new Audio(soundPath);
-        sound.volume = volume;
-        
-        // Force load the audio
-        sound.load();
-        
-        // Play immediately with no delay
-        const playPromise = sound.play();
-        
-        if (playPromise !== undefined) {
-            playPromise.catch(error => {
-                console.error("Audio play error:", error);
-                
-                // If sound failed, try to unlock audio system again
-                if (error.name === "NotAllowedError") {
-                    unlockAudio();
-                }
-            });
-        }
-    } catch (error) {
-        console.error("Error playing sound:", error);
-    }
-}
-
-// Toggle sound on/off
-function toggleSound() {
-    soundEnabled = !soundEnabled;
-    
-    // Update mute button appearance
-    const muteButton = document.getElementById('muteButton');
-    if (muteButton) {
-        muteButton.innerHTML = soundEnabled ? '🔊' : '🔇';
-    }
-    
-    // Save preference to local storage
-    try {
-        localStorage.setItem('soundEnabled', soundEnabled.toString());
-    } catch (e) {
-        console.error('Could not save sound preference:', e);
-    }
 }
