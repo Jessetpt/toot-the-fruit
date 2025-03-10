@@ -23,6 +23,9 @@ const SOUND_INVALID = 'sounds/fail.wav';
 const SOUND_FALL = 'sounds/fall.wav';
 const SOUND_GAME_OVER = 'sounds/game over.wav';
 
+// Pre-loaded audio elements
+const audioElements = {};
+
 // Simple audio control
 let soundEnabled = true;
 let lastSoundTime = 0;
@@ -776,7 +779,7 @@ function handleClick(event) {
                     swapTiles(selectedTile.row, selectedTile.col, row, col);
                 } else {
                     // Not adjacent - select new tile
-                    selectedTile = { row, col };
+                selectedTile = { row, col };
                     drawBoard();
                 }
             }
@@ -1089,34 +1092,29 @@ function animationFrame(timestamp) {
     requestAnimationFrame(animationFrame);
 }
 
-// Simple sound function - plays one sound at a time with minimal delay
-function playSound(url, volume = 1.0) {
-    if (!soundEnabled) return;
+// Load all audio files up front
+function preloadAudio() {
+    // List of all sounds to preload
+    const sounds = [
+        SOUND_SELECT,
+        SOUND_SWAP,
+        SOUND_MATCH,
+        SOUND_INVALID,
+        SOUND_FALL,
+        SOUND_GAME_OVER
+    ];
     
-    // Prevent sound spamming - only allow one sound every 100ms
-    const now = Date.now();
-    if (now - lastSoundTime < 100) return;
-    lastSoundTime = now;
-    
-    try {
-        const sound = new Audio(url);
-        sound.volume = volume;
-        sound.play();
-    } catch (e) {
-        console.error("Error playing sound:", e);
-    }
+    // Create audio elements for each sound
+    sounds.forEach(sound => {
+        const audio = new Audio(sound);
+        audio.preload = 'auto';
+        audioElements[sound] = audio;
+        // Attempt to load the audio
+        audio.load();
+    });
 }
 
-// Simple audio toggle function
-function toggleSound() {
-    soundEnabled = !soundEnabled;
-    const muteButton = document.getElementById('muteButton');
-    if (muteButton) {
-        muteButton.innerHTML = soundEnabled ? '🔊' : '🔇';
-    }
-}
-
-// Initialize the audio system - just the mute button
+// Initialize the audio system - mute button and preload
 function initAudio() {
     // Create a mute button in the top-right corner
     const muteButton = document.createElement('button');
@@ -1135,4 +1133,56 @@ function initAudio() {
     
     muteButton.addEventListener('click', toggleSound);
     document.body.appendChild(muteButton);
+    
+    // Preload all audio files
+    preloadAudio();
+}
+
+// Play a sound - optimized for mobile
+function playSound(url, volume = 1.0) {
+    if (!soundEnabled) return;
+    
+    // Special handling for the fail sound - never throttle it
+    const isFailSound = (url === SOUND_INVALID);
+    const isSelectSound = (url === SOUND_SELECT);
+    
+    // Only throttle non-critical sounds
+    if (!isFailSound && !isSelectSound) {
+        const now = Date.now();
+        if (now - lastSoundTime < 50) return;
+        lastSoundTime = now;
+    }
+    
+    try {
+        // Use the preloaded audio element if available
+        if (audioElements[url]) {
+            // Clone the audio node for simultaneous playback
+            const sound = audioElements[url].cloneNode();
+            sound.volume = volume;
+            
+            // Add debug logging
+            console.log(`Playing sound: ${url.split('/').pop()}`);
+            
+            // Play immediately
+            sound.play().catch(err => {
+                console.log(`Error playing ${url}: ${err.message}`);
+            });
+        } else {
+            // Fallback for any sounds not preloaded
+            const sound = new Audio(url);
+            sound.volume = volume;
+            sound.play();
+        }
+    } catch (e) {
+        console.error("Error playing sound:", e);
+    }
+}
+
+// Simplified toggle sound function
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    const muteButton = document.getElementById('muteButton');
+    if (muteButton) {
+        muteButton.innerHTML = soundEnabled ? '��' : '🔇';
+    }
 }

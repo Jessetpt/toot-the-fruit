@@ -333,12 +333,17 @@
                 margin: 10px 0;
                 border: none;
                 border-radius: 15px;
+                /* Create cleaner background with more precise sizing */
                 background-size: 40px 40px, 40px 40px, 100% 100%;
                 background-image: 
-                    linear-gradient(to right, rgba(32, 156, 189, 0.3) 1px, transparent 1px),
-                    linear-gradient(to bottom, rgba(246, 131, 24, 0.3) 1px, transparent 1px),
                     linear-gradient(135deg, #c4e6f0 0%, #e2f1f7 100%);
+                background-color: #d9edf4;
                 box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+                /* Ensure pattern is fully contained */
+                background-origin: border-box;
+                background-clip: border-box;
+                /* Add a clean border */
+                border: 1px solid rgba(32, 156, 189, 0.3);
             }
             
             .game-header {
