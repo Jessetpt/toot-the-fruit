@@ -26,8 +26,9 @@ const SOUND_GAME_OVER = 'sounds/game over.wav';
 // Pre-loaded audio elements
 const audioElements = {};
 
-// Simple sound control
+// Super simple sound control
 let soundEnabled = true;
+let lastPlayedSound = '';
 let lastSoundTime = 0;
 
 // Game variables
@@ -1116,7 +1117,38 @@ function preloadAudio() {
     });
 }
 
-// Initialize the audio system - just the mute button
+// Simple sound system - absolutely minimal
+function playSound(url, volume = 1.0) {
+    if (!soundEnabled) return;
+    
+    // Prevent excessive sound spam - strict
+    const now = Date.now();
+    if (url === lastPlayedSound && now - lastSoundTime < 300) {
+        return;
+    }
+    
+    // Track what we played
+    lastPlayedSound = url;
+    lastSoundTime = now;
+    
+    // Create exactly one Audio element
+    const audio = new Audio(url);
+    audio.volume = volume;
+    
+    // Try to play with catch for browsers that block
+    try {
+        const promise = audio.play();
+        if (promise !== undefined) {
+            promise.catch(e => {
+                console.error("Audio error:", e);
+            });
+        }
+    } catch (e) {
+        console.error("Sound play error:", e);
+    }
+}
+
+// Initialize audio - absolute minimal mute button
 function initAudio() {
     // Create mute button
     const muteButton = document.createElement('button');
@@ -1136,30 +1168,25 @@ function initAudio() {
     
     muteButton.addEventListener('click', toggleSound);
     document.body.appendChild(muteButton);
+    
+    // Unlock audio for mobile
+    unlockAudio();
 }
 
-// Play a sound with simple throttling to prevent multiple sounds playing at once
-function playSound(url, volume = 1.0) {
-    if (!soundEnabled) return;
+// Unlock audio on mobile devices
+function unlockAudio() {
+    // Add event listeners to unlock audio on first interaction
+    document.addEventListener('touchstart', function() {
+        // Create and play a silent sound to unlock the audio context
+        const silentSound = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjEyLjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7f////////////////////////////////8AAAAATGF2YzU4LjE5AAAAAAAAAAAAAAAAJAAAAAAAAAAAECAjzEoAAAAAAAAAAAAAAAAAAAAAAP/7kGQAD/DHAEB0cIABSzAJjtCGIAJdSWZxocAFRMCjS3QhiA+AAAAA9eW0l7ElQDnM6DdvTlOA4mjRLZwGTcV0JBJInf0WMRSODGb0IoBmYwJOCTTi6E4oJzCgk4QQns4FhhmcsnCgk4VSHB30EZzwP8XH4uCDggfd/8QD4XBB//5jgg4IP1//yMBAQDwMicEGAgBX1MULfP8YN5EBD/+YWfdjmcaDeLjQz//MxgRIAAQAHALQHwfB+JwfiIYc+D8P////h+H4iGAnBAQDAYDAYDAYDAAAAABLK0MdKUsrQyf/4AACBFK0MdKYAICB+Kg2f0pTEFNRTMuOTkuNVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==");
+        silentSound.play().catch(() => {});
+    }, {once: true});
     
-    // Simple throttling - only one sound every 150ms
-    const now = Date.now();
-    if (now - lastSoundTime < 150) {
-        console.log(`Sound throttled: ${url}`);
-        return;
-    }
-    lastSoundTime = now;
-    
-    try {
-        // Just create a new Audio instance each time
-        const sound = new Audio(url);
-        sound.volume = volume;
-        sound.play().catch(err => {
-            console.error(`Error playing sound: ${err.message}`);
-        });
-    } catch (e) {
-        console.error("Error playing sound:", e);
-    }
+    document.addEventListener('click', function() {
+        // Create and play a silent sound to unlock the audio context
+        const silentSound = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjEyLjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7f////////////////////////////////8AAAAATGF2YzU4LjE5AAAAAAAAAAAAAAAAJAAAAAAAAAAAECAjzEoAAAAAAAAAAAAAAAAAAAAAAP/7kGQAD/DHAEB0cIABSzAJjtCGIAJdSWZxocAFRMCjS3QhiA+AAAAA9eW0l7ElQDnM6DdvTlOA4mjRLZwGTcV0JBJInf0WMRSODGb0IoBmYwJOCTTi6E4oJzCgk4QQns4FhhmcsnCgk4VSHB30EZzwP8XH4uCDggfd/8QD4XBB//5jgg4IP1//yMBAQDwMicEGAgBX1MULfP8YN5EBD/+YWfdjmcaDeLjQz//MxgRIAAQAHALQHwfB+JwfiIYc+D8P////h+H4iGAnBAQDAYDAYDAYDAAAAABLK0MdKUsrQyf/4AACBFK0MdKYAICB+Kg2f0pTEFNRTMuOTkuNVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==");
+        silentSound.play().catch(() => {});
+    }, {once: true});
 }
 
 // Toggle sound on/off
