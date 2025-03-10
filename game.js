@@ -30,6 +30,9 @@ const audioElements = {};
 let soundEnabled = true;
 let lastPlayedSound = '';
 let lastSoundTime = 0;
+// Mobile-specific sound tracking
+let lastFallSoundTime = 0;
+let lastMatchSoundTime = 0;
 
 // Game variables
 let canvas, ctx;
@@ -1121,20 +1124,49 @@ function preloadAudio() {
 function playSound(url, volume = 1.0) {
     if (!soundEnabled) return;
     
-    // Prevent excessive sound spam - even stricter for fall sounds
     const now = Date.now();
-    if (url === SOUND_FALL && now - lastSoundTime < 500) {
-        return; // Even longer delay for fall sounds
-    } else if (url === lastPlayedSound && now - lastSoundTime < 350) {
-        return; // Normal delay for other sounds
+    
+    // MOBILE-SPECIFIC HANDLING - much stricter throttling for mobile devices
+    if (isMobileDevice) {
+        // Special handling for fall sound on mobile
+        if (url === SOUND_FALL) {
+            // For mobile: Only play fall sound once every 3 seconds
+            if (now - lastFallSoundTime < 3000) {
+                return; // Skip this fall sound on mobile
+            }
+            // Update mobile-specific fall sound tracking
+            lastFallSoundTime = now;
+            // Make fall sounds MUCH quieter on mobile
+            volume = Math.min(volume, 0.2);
+        } 
+        // For match sounds on mobile - stricter throttling
+        else if (url === SOUND_MATCH) {
+            if (now - lastMatchSoundTime < 1000) {
+                return; // Only play match sound once per second on mobile
+            }
+            lastMatchSoundTime = now;
+        }
+        // For all other repeated sounds - stricter throttling
+        else if (url === lastPlayedSound && now - lastSoundTime < 750) {
+            return; // Longer delay for repeated sounds on mobile
+        }
+    }
+    // DESKTOP HANDLING - no changes to existing desktop behavior
+    else {
+        // Original desktop throttling logic
+        if (url === SOUND_FALL && now - lastSoundTime < 500) {
+            return; // Original fall sound throttling for desktop
+        } else if (url === lastPlayedSound && now - lastSoundTime < 350) {
+            return; // Original throttling for other sounds on desktop
+        }
+        
+        // Original volume adjustment for desktop
+        if (url === SOUND_FALL) {
+            volume = Math.min(volume, 0.4); // Original desktop volume adjustment
+        }
     }
     
-    // Adjust volume for fall sounds to be quieter
-    if (url === SOUND_FALL) {
-        volume = Math.min(volume, 0.4); // Make fall sounds quieter
-    }
-    
-    // Track what we played
+    // Track what we played for all devices
     lastPlayedSound = url;
     lastSoundTime = now;
     
@@ -1191,7 +1223,7 @@ function unlockAudio() {
         audioUnlocked = true;
         
         // Create and play a silent sound
-        const silentSound = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjEyLjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7f////////////////////////////////8AAAAATGF2YzU4LjE5AAAAAAAAAAAAAAAAJAAAAAAAAAAAECAjzEoAAAAAAAAAAAAAAAAAAAAAAP/7kGQAD/DHAEB0cIABSzAJjtCGIAJdSWZxocAFRMCjS3QhiA+AAAAA9eW0l7ElQDnM6DdvTlOA4mjRLZwGTcV0JBJInf0WMRSODGb0IoBmYwJOCTTi6E4oJzCgk4QQns4FhhmcsnCgk4VSHB30EZzwP8XH4uCDggfd/8QD4XBB//5jgg4IP1//yMBAQDwMicEGAgBX1MULfP8YN5EBD/+YWfdjmcaDeLjQz//MxgRIAAQAHALQHwfB+JwfiIYc+D8P////h+H4iGAnBAQDAYDAYDAYDAAAAABLK0MdKUsrQyf/4AACBFK0MdKYAICB+Kg2f0pTEFNRTMuOTkuNVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==");
+        const silentSound = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjEyLjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7f////////////////////////////////8AAAAATGF2YzU4LjE5AAAAAAAAAAAAAAAAJAAAAAAAAAAAECAjzEoAAAAAAAAAAAAAAAAAAAAAAP/7kGQAD/DHAEB0cIABSzAJjtCGIAJdSWZxocAFRMCjS3QhiA+AAAAA9eW0l7ElQDnM6DdvTlOA4mjRLZwGTcV0JBJInf0WMRSODGb0IoBmYwJOCTTi6E4oJzCgk4QQns4FhhmcsnCgk4VSHB30EZzwP8XH4uCDggfd/8QD4XBB//5jgg4IP1//yMBAQDwMicEGAgBX1MULfP8YN5EBD/+YWfdjmcaDeLjQz//MxgRIAAQAHALQHwfB+JwfiIYc+D8P////h+H4iGAnBAQDAYDAYDAYDAAAAABLK0MdKUsrQyf/4AACBFK0MdKYAICB+Kg2f0pTEFNRTMuOTkuNVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==");
         silentSound.volume = 0;
         
         // Use both play() methods to handle different browser behaviors
