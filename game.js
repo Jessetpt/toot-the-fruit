@@ -16,12 +16,12 @@ const COLOR_WHITE = '#FFFFFF'; // White
 const COLOR_LIGHT_BLUE = '#a3d6ec'; // More saturated and noticeable blue for tile backgrounds
 
 // Sound effect paths
-const SOUND_SELECT = 'sounds/select.mp3';
-const SOUND_SWAP = 'sounds/swap.mp3';
-const SOUND_MATCH = 'sounds/match.mp3';
-const SOUND_INVALID = 'sounds/invalid.mp3';
-const SOUND_FALL = 'sounds/fall.mp3';
-const SOUND_GAME_OVER = 'sounds/gameover.mp3';
+const SOUND_SELECT = 'sounds/clickbuttonsound.wav';
+const SOUND_SWAP = 'sounds/swoosh.wav';
+const SOUND_MATCH = 'sounds/correct.wav';
+const SOUND_INVALID = 'sounds/invalid.mp3'; // Still using placeholder - no new sound file
+const SOUND_FALL = 'sounds/fall.wav';
+const SOUND_GAME_OVER = 'sounds/game over.wav';
 
 // Audio control variables
 let soundEnabled = true;
