@@ -105,9 +105,39 @@ function init() {
     canvas.height = BOARD_HEIGHT;
 
     // Ensure the canvas has the right styling for consistency
-    canvas.style.border = `3px solid ${COLOR_BLUE}`;
+    // Using gradient border instead of solid color
+    canvas.style.border = 'none'; // Remove default border
     canvas.style.backgroundColor = COLOR_LIGHT_BLUE;
     canvas.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.3)';
+    canvas.style.position = 'relative'; // For pseudo-elements
+    canvas.style.borderRadius = '14px'; // Match the border radius
+    
+    // Add special styling for gradient border via CSS class
+    canvas.classList.add('gradient-border');
+
+    // Create style element if it doesn't exist
+    let styleEl = document.getElementById('game-dynamic-styles');
+    if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'game-dynamic-styles';
+        document.head.appendChild(styleEl);
+    }
+
+    // Add CSS for gradient border
+    styleEl.textContent = `
+        .gradient-border {
+            border: 3px solid transparent;
+            background-clip: padding-box;
+        }
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            top: -3px; left: -3px; right: -3px; bottom: -3px;
+            background: linear-gradient(to right, ${COLOR_BLUE}, ${COLOR_ORANGE});
+            border-radius: 17px; /* 3px more than canvas border-radius */
+            z-index: -1;
+        }
+    `;
     
     // Add event listeners
     canvas.addEventListener('click', handleClick);
@@ -303,8 +333,8 @@ function drawBoard() {
     ctx.fillStyle = COLOR_LIGHT_BLUE; // Light blue background
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Draw grid lines for better visibility
-    ctx.strokeStyle = `rgba(32, 156, 189, 0.2)`; // Light blue grid lines
+    // Draw grid lines using orange for better visibility
+    ctx.strokeStyle = `rgba(246, 131, 24, 0.5)`; // Orange grid lines with 50% opacity
     ctx.lineWidth = 1;
     
     // Draw vertical grid lines
