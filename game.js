@@ -305,10 +305,10 @@ function gameLoop() {
                 return;
             }
         }
+    } else {
+        // Only handle falling tiles if they need to fall
+        handleFallingTiles();
     }
-    
-    // Handle falling tiles
-    handleFallingTiles();
     
     // Game logic updates are handled here, but we don't need to call drawBoard()
     // since the animation loop will handle rendering
@@ -963,11 +963,6 @@ function checkAdjacentVegetables(row, col, tilesToRemove) {
 
 // Handle falling tiles
 function handleFallingTiles() {
-    fallingTiles = true;
-    
-    // Play fall sound
-    setTimeout(() => playSound(SOUND_FALL, 0.7), 200);
-    
     let tilesFell = false;
     
     // Move tiles down to fill empty spaces
@@ -1006,6 +1001,11 @@ function handleFallingTiles() {
                 tilesFell = true;
             }
         }
+    }
+    
+    // Only play the fall sound if tiles actually fell and we haven't played it recently
+    if (tilesFell) {
+        playSound(SOUND_FALL, 0.5);
     }
     
     // Update the falling tiles flag
@@ -1121,10 +1121,17 @@ function preloadAudio() {
 function playSound(url, volume = 1.0) {
     if (!soundEnabled) return;
     
-    // Prevent excessive sound spam - strict
+    // Prevent excessive sound spam - even stricter for fall sounds
     const now = Date.now();
-    if (url === lastPlayedSound && now - lastSoundTime < 300) {
-        return;
+    if (url === SOUND_FALL && now - lastSoundTime < 500) {
+        return; // Even longer delay for fall sounds
+    } else if (url === lastPlayedSound && now - lastSoundTime < 350) {
+        return; // Normal delay for other sounds
+    }
+    
+    // Adjust volume for fall sounds to be quieter
+    if (url === SOUND_FALL) {
+        volume = Math.min(volume, 0.4); // Make fall sounds quieter
     }
     
     // Track what we played
@@ -1173,20 +1180,58 @@ function initAudio() {
     unlockAudio();
 }
 
-// Unlock audio on mobile devices
+// Unlock audio on mobile devices - more reliable method
 function unlockAudio() {
-    // Add event listeners to unlock audio on first interaction
-    document.addEventListener('touchstart', function() {
-        // Create and play a silent sound to unlock the audio context
-        const silentSound = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjEyLjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7f////////////////////////////////8AAAAATGF2YzU4LjE5AAAAAAAAAAAAAAAAJAAAAAAAAAAAECAjzEoAAAAAAAAAAAAAAAAAAAAAAP/7kGQAD/DHAEB0cIABSzAJjtCGIAJdSWZxocAFRMCjS3QhiA+AAAAA9eW0l7ElQDnM6DdvTlOA4mjRLZwGTcV0JBJInf0WMRSODGb0IoBmYwJOCTTi6E4oJzCgk4QQns4FhhmcsnCgk4VSHB30EZzwP8XH4uCDggfd/8QD4XBB//5jgg4IP1//yMBAQDwMicEGAgBX1MULfP8YN5EBD/+YWfdjmcaDeLjQz//MxgRIAAQAHALQHwfB+JwfiIYc+D8P////h+H4iGAnBAQDAYDAYDAYDAAAAABLK0MdKUsrQyf/4AACBFK0MdKYAICB+Kg2f0pTEFNRTMuOTkuNVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==");
-        silentSound.play().catch(() => {});
-    }, {once: true});
+    // Flag to track if audio has been unlocked
+    let audioUnlocked = false;
     
-    document.addEventListener('click', function() {
-        // Create and play a silent sound to unlock the audio context
-        const silentSound = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjEyLjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7f////////////////////////////////8AAAAATGF2YzU4LjE5AAAAAAAAAAAAAAAAJAAAAAAAAAAAECAjzEoAAAAAAAAAAAAAAAAAAAAAAP/7kGQAD/DHAEB0cIABSzAJjtCGIAJdSWZxocAFRMCjS3QhiA+AAAAA9eW0l7ElQDnM6DdvTlOA4mjRLZwGTcV0JBJInf0WMRSODGb0IoBmYwJOCTTi6E4oJzCgk4QQns4FhhmcsnCgk4VSHB30EZzwP8XH4uCDggfd/8QD4XBB//5jgg4IP1//yMBAQDwMicEGAgBX1MULfP8YN5EBD/+YWfdjmcaDeLjQz//MxgRIAAQAHALQHwfB+JwfiIYc+D8P////h+H4iGAnBAQDAYDAYDAYDAAAAABLK0MdKUsrQyf/4AACBFK0MdKYAICB+Kg2f0pTEFNRTMuOTkuNVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==");
-        silentSound.play().catch(() => {});
-    }, {once: true});
+    // Function to actually unlock audio
+    const unlock = () => {
+        if (audioUnlocked) return; // Only need to do this once
+        audioUnlocked = true;
+        
+        // Create and play a silent sound
+        const silentSound = new Audio("data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjEyLjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA7e3t7e3t7e3t7e3t7e3t7e3t7e3t7e3t7f////////////////////////////////8AAAAATGF2YzU4LjE5AAAAAAAAAAAAAAAAJAAAAAAAAAAAECAjzEoAAAAAAAAAAAAAAAAAAAAAAP/7kGQAD/DHAEB0cIABSzAJjtCGIAJdSWZxocAFRMCjS3QhiA+AAAAA9eW0l7ElQDnM6DdvTlOA4mjRLZwGTcV0JBJInf0WMRSODGb0IoBmYwJOCTTi6E4oJzCgk4QQns4FhhmcsnCgk4VSHB30EZzwP8XH4uCDggfd/8QD4XBB//5jgg4IP1//yMBAQDwMicEGAgBX1MULfP8YN5EBD/+YWfdjmcaDeLjQz//MxgRIAAQAHALQHwfB+JwfiIYc+D8P////h+H4iGAnBAQDAYDAYDAYDAAAAABLK0MdKUsrQyf/4AACBFK0MdKYAICB+Kg2f0pTEFNRTMuOTkuNVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==");
+        silentSound.volume = 0;
+        
+        // Use both play() methods to handle different browser behaviors
+        try {
+            // Modern promise-based approach
+            const promise = silentSound.play();
+            if (promise !== undefined) {
+                promise.catch(error => {
+                    console.log('Audio unlock failed initial attempt:', error);
+                    // Try another method for iOS
+                    silentSound.currentTime = 0;
+                    document.body.addEventListener('click', () => {
+                        silentSound.play().catch(e => console.log('Secondary unlock failed:', e));
+                    }, {once: true});
+                });
+            }
+        } catch (e) {
+            console.log('Audio system exception:', e);
+        }
+    };
+    
+    // Listen for user interaction events to unlock audio
+    const unlockEvents = ['touchstart', 'touchend', 'mousedown', 'keydown', 'click'];
+    unlockEvents.forEach(event => {
+        document.addEventListener(event, unlock, {once: true});
+    });
+    
+    // Also try to unlock on window focus, which can help on some devices
+    window.addEventListener('focus', unlock, {once: true});
+    
+    // Special handling for Safari's audio issues
+    // Force unlock after 2 seconds on iOS Safari if not already unlocked
+    if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        setTimeout(() => {
+            if (!audioUnlocked) {
+                console.log('Forced audio unlock for iOS');
+                unlock();
+            }
+        }, 2000);
+    }
 }
 
 // Toggle sound on/off
