@@ -13,6 +13,7 @@ const COLOR_BLUE = '#209CBD'; // Blue/Teal
 const COLOR_ORANGE = '#F68318'; // Orange
 const COLOR_BLACK = '#000000'; // Black
 const COLOR_WHITE = '#FFFFFF'; // White
+const COLOR_LIGHT_BLUE = '#d9edf4'; // Light blue for tile backgrounds
 
 // Game variables
 let canvas, ctx;
@@ -105,7 +106,7 @@ function init() {
 
     // Ensure the canvas has the right styling for consistency
     canvas.style.border = `3px solid ${COLOR_BLUE}`;
-    canvas.style.backgroundColor = COLOR_WHITE;
+    canvas.style.backgroundColor = COLOR_LIGHT_BLUE;
     canvas.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.3)';
     
     // Add event listeners
@@ -298,8 +299,8 @@ function drawBoard() {
     // Clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Draw background grid - using white consistently
-    ctx.fillStyle = COLOR_WHITE; // White background
+    // Draw background grid - using light blue consistently
+    ctx.fillStyle = COLOR_LIGHT_BLUE; // Light blue background
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     // Draw grid lines for better visibility
