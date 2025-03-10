@@ -301,9 +301,9 @@
             }
             
             .game-container {
-                width: 95%;
+                width: 100%;
                 margin: 0;
-                padding: 10px;
+                padding: 0;
                 border-radius: 15px;
                 height: auto;
                 justify-content: center;
@@ -312,6 +312,7 @@
                 overflow: hidden;
                 border: none;
                 position: relative;
+                max-width: 95%;
             }
             
             /* Remove ALL border elements completely */
@@ -319,31 +320,24 @@
             .game-container::after,
             .left-border,
             .right-border {
-                display: none;
+                display: none !important;
             }
             
-            /* Remove any other after pseudo-element */
+            /* Ensure any other after pseudo-element is removed */
             .game-container:after {
-                display: none;
+                display: none !important;
             }
             
             canvas {
-                max-width: 95%;
+                max-width: 100%;
                 max-height: calc(80vh - 80px);
-                margin: 10px 0;
+                margin: 0;
+                padding: 0;
                 border: none;
-                border-radius: 15px;
-                /* Create cleaner background with more precise sizing */
-                background-size: 40px 40px, 40px 40px, 100% 100%;
-                background-image: 
-                    linear-gradient(135deg, #c4e6f0 0%, #e2f1f7 100%);
-                background-color: #d9edf4;
-                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-                /* Ensure pattern is fully contained */
-                background-origin: border-box;
-                background-clip: border-box;
-                /* Add a clean border */
-                border: 1px solid rgba(32, 156, 189, 0.3);
+                border-radius: 12px;
+                background: #d9edf4;
+                box-shadow: none;
+                display: block;
             }
             
             .game-header {
