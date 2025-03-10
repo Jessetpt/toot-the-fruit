@@ -103,11 +103,12 @@ function init() {
     // Set canvas dimensions - keep fixed size for consistency
     canvas.width = BOARD_WIDTH;
     canvas.height = BOARD_HEIGHT;
-
-    // Ensure the canvas has the right styling for consistency
-    canvas.style.backgroundColor = COLOR_LIGHT_BLUE;
+    
+    // Set canvas styling but let the border be drawn by our drawing code
+    canvas.style.backgroundColor = 'transparent'; // Make transparent so our drawing handles all visuals
     canvas.style.borderRadius = '15px';
     canvas.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.3)';
+    canvas.style.border = 'none'; // Remove default border
     
     // Remove any previous dynamic styles
     let oldStyleEl = document.getElementById('game-dynamic-styles');
@@ -302,30 +303,53 @@ function drawBoard() {
     // Check if we should render at all
     if (!canvas || !ctx) return;
     
-    // Clear the canvas
+    // Clear the canvas completely
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Save context for clipping
-    ctx.save();
-    
-    // Create rounded corners for the board
+    // Create border using two rounded rectangles
+    const borderWidth = 4; // Slightly thicker for better visibility
     const radius = 15;
-    ctx.beginPath();
-    ctx.moveTo(radius, 0);
-    ctx.lineTo(canvas.width - radius, 0);
-    ctx.quadraticCurveTo(canvas.width, 0, canvas.width, radius);
-    ctx.lineTo(canvas.width, canvas.height - radius);
-    ctx.quadraticCurveTo(canvas.width, canvas.height, canvas.width - radius, canvas.height);
-    ctx.lineTo(radius, canvas.height);
-    ctx.quadraticCurveTo(0, canvas.height, 0, canvas.height - radius);
-    ctx.lineTo(0, radius);
-    ctx.quadraticCurveTo(0, 0, radius, 0);
-    ctx.closePath();
-    ctx.clip();
     
-    // Draw background
-    ctx.fillStyle = COLOR_LIGHT_BLUE; // Light blue background
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Function to draw rounded rectangle
+    function drawRoundedRect(x, y, width, height, radius) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+    }
+    
+    // Draw outer rectangle with horizontal gradient (blue to orange)
+    const outerGradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    outerGradient.addColorStop(0, COLOR_BLUE);
+    outerGradient.addColorStop(0.5, COLOR_ORANGE);
+    outerGradient.addColorStop(1, COLOR_BLUE);
+    
+    ctx.fillStyle = outerGradient;
+    drawRoundedRect(0, 0, canvas.width, canvas.height, radius);
+    ctx.fill();
+    
+    // Draw inner rectangle with game background
+    drawRoundedRect(borderWidth, borderWidth, 
+                   canvas.width - (borderWidth * 2), 
+                   canvas.height - (borderWidth * 2), 
+                   radius - borderWidth);
+    ctx.fillStyle = COLOR_LIGHT_BLUE;
+    ctx.fill();
+    
+    // Set clipping region for game content
+    ctx.save();
+    drawRoundedRect(borderWidth, borderWidth, 
+                   canvas.width - (borderWidth * 2), 
+                   canvas.height - (borderWidth * 2), 
+                   radius - borderWidth);
+    ctx.clip();
     
     // Draw grid lines using orange for better visibility
     ctx.strokeStyle = `rgba(246, 131, 24, 0.5)`; // Orange grid lines with 50% opacity
@@ -413,77 +437,8 @@ function drawBoard() {
         }
     }
     
-    // Restore context before drawing border
+    // Restore context after drawing game elements
     ctx.restore();
-    
-    // Draw the gradient border - directly on canvas
-    const borderWidth = 3;
-    ctx.lineWidth = borderWidth;
-    
-    // Left border (blue to orange, top to bottom)
-    let leftGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    leftGradient.addColorStop(0, COLOR_BLUE);
-    leftGradient.addColorStop(1, COLOR_ORANGE);
-    ctx.strokeStyle = leftGradient;
-    ctx.beginPath();
-    ctx.moveTo(borderWidth/2, radius);
-    ctx.lineTo(borderWidth/2, canvas.height - radius);
-    ctx.stroke();
-    
-    // Right border (orange to blue, top to bottom)
-    let rightGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    rightGradient.addColorStop(0, COLOR_ORANGE);
-    rightGradient.addColorStop(1, COLOR_BLUE);
-    ctx.strokeStyle = rightGradient;
-    ctx.beginPath();
-    ctx.moveTo(canvas.width - borderWidth/2, radius);
-    ctx.lineTo(canvas.width - borderWidth/2, canvas.height - radius);
-    ctx.stroke();
-    
-    // Top border (blue to orange, left to right)
-    let topGradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-    topGradient.addColorStop(0, COLOR_BLUE);
-    topGradient.addColorStop(1, COLOR_ORANGE);
-    ctx.strokeStyle = topGradient;
-    ctx.beginPath();
-    ctx.moveTo(radius, borderWidth/2);
-    ctx.lineTo(canvas.width - radius, borderWidth/2);
-    ctx.stroke();
-    
-    // Bottom border (orange to blue, left to right)
-    let bottomGradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-    bottomGradient.addColorStop(0, COLOR_ORANGE);
-    bottomGradient.addColorStop(1, COLOR_BLUE);
-    ctx.strokeStyle = bottomGradient;
-    ctx.beginPath();
-    ctx.moveTo(radius, canvas.height - borderWidth/2);
-    ctx.lineTo(canvas.width - radius, canvas.height - borderWidth/2);
-    ctx.stroke();
-    
-    // Draw corner arcs
-    // Top-left corner (blue)
-    ctx.strokeStyle = COLOR_BLUE;
-    ctx.beginPath();
-    ctx.arc(radius, radius, radius - borderWidth/2, Math.PI, 1.5 * Math.PI);
-    ctx.stroke();
-    
-    // Top-right corner (orange)
-    ctx.strokeStyle = COLOR_ORANGE;
-    ctx.beginPath();
-    ctx.arc(canvas.width - radius, radius, radius - borderWidth/2, 1.5 * Math.PI, 2 * Math.PI);
-    ctx.stroke();
-    
-    // Bottom-left corner (orange)
-    ctx.strokeStyle = COLOR_ORANGE;
-    ctx.beginPath();
-    ctx.arc(radius, canvas.height - radius, radius - borderWidth/2, 0.5 * Math.PI, Math.PI);
-    ctx.stroke();
-    
-    // Bottom-right corner (blue)
-    ctx.strokeStyle = COLOR_BLUE;
-    ctx.beginPath();
-    ctx.arc(canvas.width - radius, canvas.height - radius, radius - borderWidth/2, 0, 0.5 * Math.PI);
-    ctx.stroke();
 }
 
 // Helper function to convert hex color to RGB
