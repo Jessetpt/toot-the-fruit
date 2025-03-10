@@ -15,6 +15,19 @@ const COLOR_BLACK = '#000000'; // Black
 const COLOR_WHITE = '#FFFFFF'; // White
 const COLOR_LIGHT_BLUE = '#a3d6ec'; // More saturated and noticeable blue for tile backgrounds
 
+// Sound effect paths
+const SOUND_SELECT = 'sounds/select.mp3';
+const SOUND_SWAP = 'sounds/swap.mp3';
+const SOUND_MATCH = 'sounds/match.mp3';
+const SOUND_INVALID = 'sounds/invalid.mp3';
+const SOUND_FALL = 'sounds/fall.mp3';
+const SOUND_GAME_OVER = 'sounds/gameover.mp3';
+
+// Audio control variables
+let soundEnabled = true;
+let audioCache = {};
+let audioInitialized = false;
+
 // Game variables
 let canvas, ctx;
 let board = [];
@@ -90,6 +103,9 @@ window.onload = function() {
     
     // Start animation loop immediately for UI responsiveness (selections, etc.)
     startAnimationLoop();
+    
+    // Initialize audio system
+    initAudio();
 };
 
 // Initialize the game board
@@ -825,65 +841,49 @@ function handleTouchEnd(event) {
     }
 }
 
-// Handle tile click
+// Handle mouse clicks on the game board
 function handleClick(event) {
-    if (!gameRunning) {
-        return;
-    }
+    // Exit if the game is not running
+    if (!gameRunning) return;
     
-    if (fallingTiles) return;
-    
+    // Get click coordinates relative to the canvas
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     
-    // Apply the same scaling logic we use for mobile to ensure consistency
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const scaledX = x * scaleX;
-    const scaledY = y * scaleY;
+    // Convert to grid coordinates
+    const col = Math.floor(x / TILE_SIZE);
+    const row = Math.floor(y / TILE_SIZE);
     
-    const col = Math.floor(scaledX / TILE_SIZE);
-    const row = Math.floor(scaledY / TILE_SIZE);
-    
-    console.log("Desktop click at position:", row, col);
-    
+    // Check if the click is within the grid bounds
     if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
-        const oldSelectedTile = selectedTile ? {...selectedTile} : null;
-        
-        if (selectedTile) {
-            // If a tile is already selected, try to swap
-            const { row: selectedRow, col: selectedCol } = selectedTile;
-            
-            // Check if the clicked tile is adjacent to the selected tile
-            const isHorizontalAdjacent = Math.abs(col - selectedCol) === 1 && row === selectedRow;
-            const isVerticalAdjacent = Math.abs(row - selectedRow) === 1 && col === selectedCol;
-            
-            console.log("Adjacency check:", 
-                       "Horizontal:", isHorizontalAdjacent, 
-                       "Vertical:", isVerticalAdjacent);
-                       
-            if (isHorizontalAdjacent || isVerticalAdjacent) {
-                // Swap tiles - this is a valid move
-                console.log("Valid move - swapping tiles");
-                swapTiles(selectedRow, selectedCol, row, col);
-                // selectedTile is handled by swapTiles
-            } else {
-                // Select the new tile instead - always select on first click
-                console.log("Not adjacent - selecting new tile");
-                selectedTile = { row, col };
-                // Force a redraw to show the selection
-                drawBoard();
-            }
-        } else {
-            // Select the tile
-            console.log("No previous selection - selecting tile");
+        // If no tile is selected, select this one
+        if (!selectedTile) {
             selectedTile = { row, col };
-            // Force a redraw to show the selection
+            playSound(SOUND_SELECT, 0.5); // Play selection sound
             drawBoard();
+        } else {
+            // If this is the same tile, deselect it
+            if (selectedTile.row === row && selectedTile.col === col) {
+                selectedTile = null;
+                playSound(SOUND_SELECT, 0.3); // Play deselection sound (quieter)
+                drawBoard();
+            } else {
+                // Check if this is adjacent to the selected tile
+                const rowDiff = Math.abs(selectedTile.row - row);
+                const colDiff = Math.abs(selectedTile.col - col);
+                
+                if ((rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1)) {
+                    // Swap the tiles
+                    swapTiles(selectedTile.row, selectedTile.col, row, col);
+                } else {
+                    // Not adjacent, select the new tile instead
+                    selectedTile = { row, col };
+                    playSound(SOUND_SELECT, 0.5); // Play new selection sound
+                    drawBoard();
+                }
+            }
         }
-        
-        console.log("Old selected:", oldSelectedTile, "New selected:", selectedTile);
     }
 }
 
@@ -896,6 +896,9 @@ function swapTiles(row1, col1, row2, col2) {
     board[row1][col1] = board[row2][col2];
     board[row2][col2] = temp;
     
+    // Play swap sound
+    playSound(SOUND_SWAP, 0.7);
+    
     // Check if the swap created any matches
     const matches = findMatches();
     
@@ -907,7 +910,9 @@ function swapTiles(row1, col1, row2, col2) {
         // Clear selection after a successful swap
         selectedTile = null;
     } else {
-        // Invalid move, swap back
+        // Invalid move, play invalid sound and swap back
+        playSound(SOUND_INVALID, 0.6);
+        
         const temp = board[row1][col1];
         board[row1][col1] = board[row2][col2];
         board[row2][col2] = temp;
@@ -989,6 +994,10 @@ function findMatches() {
 
 // Process matches and remove matched tiles
 function processMatches(matches) {
+    // Play match sound with volume based on match count
+    const volume = Math.min(0.5 + (matches.length * 0.1), 1.0);
+    playSound(SOUND_MATCH, volume);
+    
     // Keep track of tiles to remove
     const tilesToRemove = new Set();
     
@@ -1071,6 +1080,11 @@ function handleFallingTiles() {
         }
     }
     
+    // Play falling sound if tiles fell
+    if (tilesFell) {
+        playSound(SOUND_FALL, 0.5);
+    }
+    
     // Fill in empty spaces at the top with new tiles
     for (let col = 0; col < GRID_SIZE; col++) {
         for (let row = 0; row < GRID_SIZE; row++) {
@@ -1113,7 +1127,9 @@ function isGameOver() {
 // End the game
 function endGame() {
     gameRunning = false;
+    playSound(SOUND_GAME_OVER, 0.8);
     document.getElementById('finalScore').textContent = score;
+    document.getElementById('finalScoreInput').value = score;
     document.getElementById('gameOverModal').style.display = 'block';
 }
 
@@ -1174,4 +1190,113 @@ function animationFrame(timestamp) {
     
     // Continue the animation loop
     requestAnimationFrame(animationFrame);
+}
+
+// Initialize the audio system
+function initAudio() {
+    // Create a mute button in the top-right corner
+    const muteButton = document.createElement('button');
+    muteButton.id = 'muteButton';
+    muteButton.innerHTML = '🔊';
+    muteButton.style.position = 'absolute';
+    muteButton.style.top = '10px';
+    muteButton.style.right = '10px';
+    muteButton.style.zIndex = '1000';
+    muteButton.style.background = 'none';
+    muteButton.style.border = 'none';
+    muteButton.style.fontSize = '24px';
+    muteButton.style.cursor = 'pointer';
+    muteButton.style.color = COLOR_WHITE;
+    muteButton.style.textShadow = '0 2px 4px rgba(0,0,0,0.5)';
+    
+    muteButton.addEventListener('click', toggleSound);
+    document.body.appendChild(muteButton);
+    
+    // Preload audio files
+    preloadAudio();
+    
+    // Mark as initialized
+    audioInitialized = true;
+}
+
+// Preload all audio files
+function preloadAudio() {
+    const soundPaths = [
+        SOUND_SELECT,
+        SOUND_SWAP,
+        SOUND_MATCH,
+        SOUND_INVALID,
+        SOUND_FALL,
+        SOUND_GAME_OVER
+    ];
+    
+    // Create audio objects for each sound
+    soundPaths.forEach(path => {
+        try {
+            const audio = new Audio();
+            audio.src = path;
+            audio.preload = 'auto';
+            
+            // Add to cache
+            audioCache[path] = audio;
+            
+            // Optional: load without playing
+            audio.load();
+            
+            console.log(`Preloaded audio: ${path}`);
+        } catch (error) {
+            console.error(`Failed to preload audio: ${path}`, error);
+        }
+    });
+}
+
+// Play a sound effect
+function playSound(soundPath, volume = 1.0) {
+    if (!soundEnabled || !audioInitialized) return;
+    
+    try {
+        // Use cached audio if available
+        let audio = audioCache[soundPath];
+        
+        // Create new audio object if not cached
+        if (!audio) {
+            audio = new Audio(soundPath);
+            audioCache[soundPath] = audio;
+        }
+        
+        // Reset the audio to beginning (in case it's already playing)
+        audio.currentTime = 0;
+        audio.volume = volume;
+        
+        // Play the sound
+        const playPromise = audio.play();
+        
+        // Handle play promise (required for modern browsers)
+        if (playPromise !== undefined) {
+            playPromise.catch(error => {
+                console.error('Audio playback error:', error);
+                // Often this is due to no user interaction yet
+            });
+        }
+    } catch (error) {
+        console.error('Error playing sound:', error);
+    }
+}
+
+// Toggle sound on/off
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    
+    // Update mute button appearance
+    const muteButton = document.getElementById('muteButton');
+    if (muteButton) {
+        muteButton.innerHTML = soundEnabled ? '🔊' : '🔇';
+    }
+    
+    // Save preference to local storage
+    try {
+        localStorage.setItem('soundEnabled', soundEnabled.toString());
+    } catch (e) {
+        console.error('Could not save sound preference:', e);
+    }
 }
