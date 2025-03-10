@@ -308,13 +308,13 @@
                 height: auto;
                 justify-content: center;
                 background: rgba(32, 156, 189, 0.05);
-                box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+                box-shadow: 0 0 0 2px #209CBD, 0 0 0 4px #F68318;
                 overflow: hidden;
                 border: none;
                 position: relative;
             }
             
-            /* Completely remove ALL border elements */
+            /* Remove ALL border elements completely */
             .game-container::before,
             .game-container::after,
             .left-border,
@@ -322,20 +322,9 @@
                 display: none;
             }
             
-            /* Add a clean, simple border */
+            /* Remove any other after pseudo-element */
             .game-container:after {
-                content: '';
-                position: absolute;
-                inset: 0;
-                border-radius: 15px;
-                padding: 2px;
-                background: linear-gradient(to right, #209CBD, #F68318);
-                -webkit-mask: 
-                    linear-gradient(#fff 0 0) content-box, 
-                    linear-gradient(#fff 0 0);
-                -webkit-mask-composite: xor;
-                mask-composite: exclude;
-                pointer-events: none;
+                display: none;
             }
             
             canvas {
