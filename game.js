@@ -19,9 +19,14 @@ const COLOR_LIGHT_BLUE = '#a3d6ec'; // More saturated and noticeable blue for ti
 const SOUND_SELECT = 'sounds/clickbuttonsound.wav';
 const SOUND_SWAP = 'sounds/swoosh.wav';
 const SOUND_MATCH = 'sounds/correct.wav';
-const SOUND_INVALID = 'sounds/fail.wav'; // Updated to use the new fail sound
+const SOUND_INVALID = 'sounds/fail.wav';
 const SOUND_FALL = 'sounds/fall.wav';
 const SOUND_GAME_OVER = 'sounds/game over.wav';
+
+// Audio settings
+const AUDIO_ENABLED = true;
+const AUDIO_CACHE = {}; // Cache for preloaded audio
+let audioContext;
 
 // Audio control variables
 let soundEnabled = true;
@@ -698,17 +703,13 @@ function handleTouchStart(event) {
     touchStartX = (touch.clientX - rect.left) * scaleX;
     touchStartY = (touch.clientY - rect.top) * scaleY;
     
-    console.log("Touch start at:", touchStartX, touchStartY);
-    console.log("Canvas size:", canvas.width, canvas.height);
-    console.log("Display size:", rect.width, rect.height);
-    console.log("Scale factors:", scaleX, scaleY);
-    
     const col = Math.floor(touchStartX / TILE_SIZE);
     const row = Math.floor(touchStartY / TILE_SIZE);
     
-    console.log("Calculated touch position:", row, col);
-    
     if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
+        // Play the select sound immediately when a tile is tapped
+        playSound(SOUND_SELECT, 0.5);
+        
         selectedTile = { row, col };
         // Draw a highlight around the selected tile
         drawBoard();
@@ -851,30 +852,40 @@ function handleClick(event) {
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     
+    console.log("Click detected at:", x, y);
+    
     // Convert to grid coordinates
     const col = Math.floor(x / TILE_SIZE);
     const row = Math.floor(y / TILE_SIZE);
     
+    console.log("Click grid position:", row, col);
+    
     // Check if the click is within the grid bounds
     if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
+        // Play sound immediately for better responsiveness
+        playSound(SOUND_SELECT, 0.5);
+        
         // If no tile is selected, select this one
         if (!selectedTile) {
             selectedTile = { row, col };
-            playSound(SOUND_SELECT, 0.5); // Play selection sound
+            console.log("Selected tile:", selectedTile);
             drawBoard();
         } else {
             // If this is the same tile, deselect it
             if (selectedTile.row === row && selectedTile.col === col) {
                 selectedTile = null;
-                playSound(SOUND_SELECT, 0.3); // Play deselection sound (quieter)
+                console.log("Deselected tile");
                 drawBoard();
             } else {
                 // Check if this is adjacent to the selected tile
                 const rowDiff = Math.abs(selectedTile.row - row);
                 const colDiff = Math.abs(selectedTile.col - col);
                 
+                console.log("Attempting swap, differences:", rowDiff, colDiff);
+                
                 if ((rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1)) {
                     // Swap the tiles
+                    console.log("Swapping tiles");
                     swapTiles(selectedTile.row, selectedTile.col, row, col);
                 } else {
                     // Not adjacent, select the new tile instead
@@ -1255,27 +1266,31 @@ function playSound(soundPath, volume = 1.0) {
     if (!soundEnabled || !audioInitialized) return;
     
     try {
-        // Use cached audio if available
-        let audio = audioCache[soundPath];
-        
-        // Create new audio object if not cached
-        if (!audio) {
-            audio = new Audio(soundPath);
-            audioCache[soundPath] = audio;
-        }
-        
-        // Reset the audio to beginning (in case it's already playing)
-        audio.currentTime = 0;
+        // For mobile responsiveness, create a new Audio instance each time
+        // This helps with the click sound issue and reduces delay
+        const audio = new Audio(soundPath);
         audio.volume = volume;
         
-        // Play the sound
+        // Modern browsers require user interaction before playing audio
+        // This pattern works better on mobile devices
+        audio.muted = false;
+        
+        // Play the sound with minimal latency
         const playPromise = audio.play();
         
         // Handle play promise (required for modern browsers)
         if (playPromise !== undefined) {
             playPromise.catch(error => {
                 console.error('Audio playback error:', error);
-                // Often this is due to no user interaction yet
+                // Create a "silent" play to unlock audio
+                if (error.name === 'NotAllowedError') {
+                    // Try to unlock audio on next user interaction
+                    document.addEventListener('touchstart', function unlockAudio() {
+                        document.removeEventListener('touchstart', unlockAudio);
+                        const silent = new Audio();
+                        silent.play().catch(() => {});
+                    }, {once: true});
+                }
             });
         }
     } catch (error) {
