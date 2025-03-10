@@ -26,11 +26,9 @@ const SOUND_GAME_OVER = 'sounds/game over.wav';
 // Pre-loaded audio elements
 const audioElements = {};
 
-// Sound control
+// Simple sound control
 let soundEnabled = true;
-let audioContext = null;
-let audioBuffers = {};
-let audioLoaded = false;
+let lastSoundTime = 0;
 
 // Game variables
 let canvas, ctx;
@@ -703,8 +701,8 @@ function handleTouchStart(event) {
     
     // Handle the selection just like a mouse click
     if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
-        // Play sound with no delay
-        setTimeout(() => playSound(SOUND_SELECT, 0.5), 0);
+        // Play sound
+        playSound(SOUND_SELECT, 0.5);
         
         if (!selectedTile) {
             // Select this tile
@@ -722,7 +720,7 @@ function handleTouchStart(event) {
                 
                 if ((rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1)) {
                     // Adjacent - swap tiles
-                    setTimeout(() => playSound(SOUND_SWAP, 0.7), 0);
+                    playSound(SOUND_SWAP, 0.7);
                     swapTiles(selectedTile.row, selectedTile.col, row, col);
                 } else {
                     // Not adjacent - select new tile
@@ -757,8 +755,8 @@ function handleClick(event) {
     
     // Process the click if it's within the grid
     if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {
-        // Play sound with no delay
-        setTimeout(() => playSound(SOUND_SELECT, 0.5), 0);
+        // Play sound
+        playSound(SOUND_SELECT, 0.5);
         
         if (!selectedTile) {
             // First selection
@@ -777,11 +775,11 @@ function handleClick(event) {
                 
                 if ((rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1)) {
                     // Adjacent - swap tiles
-                    setTimeout(() => playSound(SOUND_SWAP, 0.7), 0);
+                    playSound(SOUND_SWAP, 0.7);
                     swapTiles(selectedTile.row, selectedTile.col, row, col);
                 } else {
                     // Not adjacent - select new tile
-                selectedTile = { row, col };
+                    selectedTile = { row, col };
                     drawBoard();
                 }
             }
@@ -1118,124 +1116,49 @@ function preloadAudio() {
     });
 }
 
-// Initialize the audio system - mute button and preload
+// Initialize the audio system - just the mute button
 function initAudio() {
     // Create mute button
     const muteButton = document.createElement('button');
     muteButton.id = 'muteButton';
-    muteButton.innerHTML = '🔊';
+    muteButton.innerHTML = 'Sound On';
     muteButton.style.position = 'absolute';
     muteButton.style.top = '10px';
     muteButton.style.right = '10px';
     muteButton.style.zIndex = '1000';
     muteButton.style.background = 'none';
     muteButton.style.border = 'none';
-    muteButton.style.fontSize = '24px';
+    muteButton.style.fontSize = '14px';
     muteButton.style.cursor = 'pointer';
     muteButton.style.color = COLOR_WHITE;
     muteButton.style.textShadow = '0 2px 4px rgba(0,0,0,0.5)';
+    muteButton.style.padding = '5px';
     
     muteButton.addEventListener('click', toggleSound);
     document.body.appendChild(muteButton);
-    
-    // Load sounds using both methods for maximum compatibility
-    loadSoundsHTML5();
-    initWebAudio();
 }
 
-// Load sounds using HTML5 Audio
-function loadSoundsHTML5() {
-    const sounds = [
-        SOUND_SELECT,
-        SOUND_SWAP,
-        SOUND_MATCH,
-        SOUND_INVALID,
-        SOUND_FALL,
-        SOUND_GAME_OVER
-    ];
-    
-    sounds.forEach(url => {
-        // Create 3 instances of each sound for overlapping playback
-        for (let i = 0; i < 3; i++) {
-            const audio = new Audio();
-            audio.src = url;
-            audio.load();
-            
-            // Store with index for multiple instances
-            const key = `${url}_${i}`;
-            audioBuffers[key] = audio;
-            
-            // Force load by playing silently
-            audio.volume = 0;
-            audio.play().catch(() => {});
-            audio.pause();
-            audio.currentTime = 0;
-            audio.volume = 1;
-        }
-    });
-    
-    audioLoaded = true;
-}
-
-// Initialize Web Audio API as backup
-function initWebAudio() {
-    try {
-        window.AudioContext = window.AudioContext || window.webkitAudioContext;
-        audioContext = new AudioContext();
-        
-        // Unlock audio on first user interaction
-        document.addEventListener('touchstart', unlockAudio, {once: true});
-        document.addEventListener('mousedown', unlockAudio, {once: true});
-    } catch (e) {
-        console.log("Web Audio API not supported");
-    }
-}
-
-// Unlock audio on mobile
-function unlockAudio() {
-    if (audioContext) {
-        // Create and play a silent sound
-        const buffer = audioContext.createBuffer(1, 1, 22050);
-        const source = audioContext.createBufferSource();
-        source.buffer = buffer;
-        source.connect(audioContext.destination);
-        source.start(0);
-    }
-}
-
-// Play a sound - no throttling, immediate playback
+// Play a sound with simple throttling to prevent multiple sounds playing at once
 function playSound(url, volume = 1.0) {
     if (!soundEnabled) return;
     
-    console.log(`Playing sound: ${url}`);
+    // Simple throttling - only one sound every 150ms
+    const now = Date.now();
+    if (now - lastSoundTime < 150) {
+        console.log(`Sound throttled: ${url}`);
+        return;
+    }
+    lastSoundTime = now;
     
-    // Find an available sound instance
-    let soundIndex = Math.floor(Math.random() * 3);
-    const key = `${url}_${soundIndex}`;
-    
-    // Try to play sound using HTML5 Audio
-    if (audioBuffers[key]) {
-        const sound = audioBuffers[key];
-        
-        // Reset the sound
-        sound.currentTime = 0;
-        sound.volume = volume;
-        
-        // Play with fallback
-        const promise = sound.play();
-        if (promise) {
-            promise.catch(() => {
-                // If failed, try with a new Audio object
-                const newSound = new Audio(url);
-                newSound.volume = volume;
-                newSound.play();
-            });
-        }
-    } else {
-        // Fallback to creating a new Audio element
+    try {
+        // Just create a new Audio instance each time
         const sound = new Audio(url);
         sound.volume = volume;
-        sound.play();
+        sound.play().catch(err => {
+            console.error(`Error playing sound: ${err.message}`);
+        });
+    } catch (e) {
+        console.error("Error playing sound:", e);
     }
 }
 
@@ -1244,6 +1167,6 @@ function toggleSound() {
     soundEnabled = !soundEnabled;
     const muteButton = document.getElementById('muteButton');
     if (muteButton) {
-        muteButton.innerHTML = soundEnabled ? '��' : '🔇';
+        muteButton.innerHTML = soundEnabled ? 'Sound On' : 'Sound Off';
     }
 }
