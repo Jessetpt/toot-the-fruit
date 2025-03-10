@@ -13,7 +13,7 @@ const COLOR_BLUE = '#209CBD'; // Blue/Teal
 const COLOR_ORANGE = '#F68318'; // Orange
 const COLOR_BLACK = '#000000'; // Black
 const COLOR_WHITE = '#FFFFFF'; // White
-const COLOR_LIGHT_BLUE = '#d9edf4'; // Light blue for tile backgrounds
+const COLOR_LIGHT_BLUE = '#a3d6ec'; // More saturated and noticeable blue for tile backgrounds
 
 // Game variables
 let canvas, ctx;
