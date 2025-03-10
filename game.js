@@ -19,7 +19,7 @@ const COLOR_LIGHT_BLUE = '#a3d6ec'; // More saturated and noticeable blue for ti
 const SOUND_SELECT = 'sounds/clickbuttonsound.wav';
 const SOUND_SWAP = 'sounds/swoosh.wav';
 const SOUND_MATCH = 'sounds/correct.wav';
-const SOUND_INVALID = 'sounds/invalid.mp3'; // Still using placeholder - no new sound file
+const SOUND_INVALID = 'sounds/fail.wav'; // Updated to use the new fail sound
 const SOUND_FALL = 'sounds/fall.wav';
 const SOUND_GAME_OVER = 'sounds/game over.wav';
 
